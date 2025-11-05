@@ -1,3 +1,7 @@
+Please feel free to share the link to this repo.
+
+For any corrections, feel free to message me (if you can get in touch) or add an issue to the repository.
+
 [Slides](https://github.com/odenpetersen/trading-presentation/blob/main/src/presentation.pdf)
 
 Recording:
