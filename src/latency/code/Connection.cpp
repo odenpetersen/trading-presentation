@@ -6,48 +6,41 @@
 #include <unistd.h>
 #include <string>
 
-class Connection {
-	int fd;
+Connection::Connection(int port, const char* remote_ip) {
+	int listen_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	public:
-	Connection(int port, const char* remote_ip = nullptr) {
-		int listen_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	sockaddr_in local{};
+	local.sin_family = AF_INET;
+	local.sin_port = htons(port);
+	local.sin_addr.s_addr = INADDR_ANY;
 
-		sockaddr_in local = {
-			.sin_family = AF_INET,
-			.sin_port = htons(port),
-			.sin_addr = { .s_addr = INADDR_ANY }
-		};
+	bind(listen_fd, (sockaddr*)&local, sizeof(local));
+	listen(listen_fd, 10);
 
-		bind(listen_fd, (sockaddr*)&local, sizeof(local));
-		listen(listen_fd, 10);
+	if (remote_ip) {
+		fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-		if (remote_ip) {
-			fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		sockaddr_in addr{};
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(port);
+		inet_pton(AF_INET, remote_ip, &addr.sin_addr);
 
-			sockaddr_in connection = {
-				.sin_family = AF_INET,
-				.sin_port = htons(port)
-			};
-			inet_pton(AF_INET, remote_ip, &connection.sin_addr);
-
-			connect(fd, (sockaddr*)&connection, sizeof(connection));
-		} else {
-			fd = accept(listen_fd, nullptr, nullptr);
-		}
-
-		close(listen_fd);
+		connect(fd, (sockaddr*)&addr, sizeof(addr));
+	} else {
+		fd = accept(listen_fd, nullptr, nullptr);
 	}
 
-	void send(const std::string& msg) {
-		::send(fd, msg.data(), msg.size(), 0);
-	}
+	close(listen_fd);
+}
 
-	int receive(char* buf, int size) {
-		return recv(fd, buf, size, 0);
-	}
+void Connection::send(const std::string& msg) {
+	::send(fd, msg.data(), msg.size(), 0);
+}
 
-	~Connection() {
-		close(fd);
-	}
-};
+int Connection::receive(char* buf, int size) {
+	return recv(fd, buf, size, 0);
+}
+
+Connection::~Connection() {
+	close(fd);
+}
