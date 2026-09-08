@@ -1,0 +1,637 @@
+\documentclass{beamer}
+
+% Theme choice (you can change to Madrid, CambridgeUS, etc.)
+\usetheme{Madrid}
+
+% Optional packages
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx} % for including images
+\usepackage{amsmath, amssymb, mathtools} % for math symbols
+\usepackage{hyperref} % for clickable links
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{enumitem}
+
+
+% Title info
+\title[\texttt{/trading-presentation}]{Latency}
+\author[\texttt{github.com/odenpetersen}]{Oden Petersen}
+\date{2026-09-30}
+
+% Section headers
+\newcommand{\sectionquote}[1]{\def\insertsquote{\small #1}}
+\newcommand{\insertsquote}{}
+
+\AtBeginSection[]{
+	\begin{frame}
+	\vfill
+	\centering
+	\begin{beamercolorbox}[sep=8pt,center,shadow=True,rounded=True]{title}
+		\usebeamerfont{title}\insertsectionhead\par%
+	\end{beamercolorbox}
+	\vspace{1cm}
+	{\Large\textit{\insertsquote}}\par
+	\vfill
+	\end{frame}
+
+	\renewcommand{\insertsquote}{}
+}
+\begin{document}
+
+% Title page
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\begin{frame}{About Me}
+	\begin{itemize}
+		\item UNSW Maths/Compsci (graduated T1 2025)
+		\item Data Engineering @ Arnott's Biscuits (2021)
+		\item CPMSoc Maths Director 2021
+		\item Data Scientist @ Daisee (2021-2022)
+		\item Started QuantSoc 2022
+		\item Quant Intern @ Autumn Compass (2022)
+		\item Quant Intern @ Citadel Securities (Summer 2023)
+		\item Trader @ Vivcourt (Summer 2024, Feb-Jul 2026)
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Point of This Talk}
+	\begin{itemize}
+		\item 
+	\end{itemize}
+	%Hopefully generally helpful for other CS topics
+	%Dancing around IP. Will tread carefully, use publicly documented sources.
+	% I have worked with too many APAC exchanges, going to avoid details of the ones I have worked with in this talk
+\end{frame}
+
+% Table of contents
+\begin{frame}{Outline}
+	\tableofcontents
+\end{frame}
+
+\sectionquote{``All economic activity is carried out through time. Every individual economic process occupies a certain time, and all linkages between economic processes necessarily involve longer or shorter periods of time.'' Friedrich Hayek}
+\section{Trading}
+\begin{frame}{Economic Considerations}
+	%Any business exists to turn money into more money.
+
+	% Prove kelly criterion
+	% approx quadratic
+	% Buying/selling at favourable prices is free money
+	% The more opps we have to trade the more we can collect alpha or hedge risk
+
+	% Arbitrage, conditions for arbitrage. Getting legged. Statistical arbitrage.
+	% Events trading
+
+	% Why not to care about low latency. Capacity etc. Arguably we are in a low-latency winter. But also why low latency is how markets "should be" - maximise how much catallactic computation the market can do (does this argument stand up to the fact that it's really just a race, and also exchange-controlled side of the computation is not very efficient? can we demonstrate social good here?). And low-latency is not only for alpha but for risk too, allowing capacity scaling. Trading is a subset of computer science insofar as markets are calculation machines
+	% Fast can be problematic because it keeps humans out of the loop. Need risk limits and controls etc.
+\end{frame}
+
+\begin{frame}[fragile]{Latency}
+	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+> date +%s%N
+1788413610858617734
+	\end{lstlisting}
+Epoch timestamp:
+\begin{math}
+	\underbrace{1788413610}_{\text{epoch seconds}}\underbrace{858}_{\text{millis}} \underbrace{617}_{\mu\text{s}} \underbrace{734}_{\text{nanos}}
+\end{math}
+	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+> ping -c 5 192.168.0.109
+PING 192.168.0.109 (192.168.0.109): 56 data bytes
+64 bytes from 192.168.0.109: icmp_seq=0 ttl=64 time=3.763 ms
+64 bytes from 192.168.0.109: icmp_seq=1 ttl=64 time=5.376 ms
+64 bytes from 192.168.0.109: icmp_seq=2 ttl=64 time=7.845 ms
+64 bytes from 192.168.0.109: icmp_seq=3 ttl=64 time=43.958 ms
+64 bytes from 192.168.0.109: icmp_seq=4 ttl=64 time=4.174 ms
+
+--- 192.168.0.109 ping statistics ---
+5 packets transmitted, 5 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
+	\end{lstlisting}
+%Question to ponder: why so much variation?
+
+\end{frame}
+
+\begin{frame}{Time is Money}
+
+%# Latency in the trading problem
+%
+%taking good opportunities
+%
+%Getting legged on arbs
+%
+%Adverse selection (probably recurring theme)
+%More intelligence can make you effectively faster
+%
+%Fill rate
+%
+%hitting on insert vs hitting on other book event
+%Fast cancels & sweep protection
+
+%Empirical example with "big trade" copying alpha. Calibrate thresholds, then test various latency models.
+\end{frame}
+
+\sectionquote{\includegraphics[scale=0.4]{assets/rabbit.png} \\ ``Time exists in order that everything doesn’t happen all at once.'' Ray Cummings \\ \includegraphics[scale=0.2]{assets/crystal.jpg} \\ ``By a clock we understand anything characterized by a phenomenon passing periodically through identical phases so that \ldots all that happens in a given period is identical with all that happens in an arbitrary period.'' Albert Einstein}%16MHz
+\section{Time}
+
+\begin{frame}{Clocks}
+Quartz powered by a DC signal vibrates due to the piezoelectric effect at a reliable \textbf{reference frequency}.
+
+A \textbf{voltage-controlled oscillator} has a frequency dependent on the input voltage.
+
+A \textbf{phase detector} can produce a signal whose strength depends on how fast or slow the VCO is running compared to the reference.
+
+If the VCO runs at a multiple of the reference frequency and is kept in a \textbf{phase-locked loop} with the reference, we can achieve oscillation at some multiple of the reference frequency. This can be chained a number of times.
+
+Heat, manufacturing differences, crystal aging, voltage fluctuations, etc., can cause two clocks to experience \textbf{clock drift}.
+\end{frame}
+
+\begin{frame}{Clock Drift}
+%graph for ES
+%Note that this is not trivial to distinguish from slow changes in service quality over time. But generally those are a bit more discrete
+\end{frame}
+
+\begin{frame}{Synchronisation}
+% Synced to https://en.wikipedia.org/wiki/Global_Positioning_System#Timekeeping
+
+%https://www.eecis.udel.edu/~mills/database/papers/history.pdf
+%NTP (slewing, CPU TSC), PTP (hardware timestamped), white rabbit (adds synchronous ethernet)
+%Relativity: https://en.wikipedia.org/wiki/One-way_speed_of_light#Einstein_convention
+%Round trip time
+\end{frame}
+
+\sectionquote{``Speed is the essence of war.'' Sun Tzu \\ ``Remote fountains are of little help to nearby fires.'' Han Fei}
+\section{Distance}
+
+\subsection{WAN}
+\begin{frame}[fragile]{Internetworking}
+Things that are further away usually take longer to get a reply from:
+	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+> ping -c 3 192.168.0.109
+PING 192.168.0.109 (192.168.0.109): 56 data bytes
+64 bytes from 192.168.0.109: icmp_seq=0 ttl=64 time=2.593 ms
+64 bytes from 192.168.0.109: icmp_seq=1 ttl=64 time=12.022 ms
+64 bytes from 192.168.0.109: icmp_seq=2 ttl=64 time=53.092 ms
+
+--- 192.168.0.109 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 2.593/22.569/53.092/21.924 ms
+
+	\end{lstlisting}
+	\noindent\rule{\linewidth}{0.4pt}
+	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+> ping -c 3 46.17.63.250
+PING 46.17.63.250 (46.17.63.250): 56 data bytes
+64 bytes from 46.17.63.250: icmp_seq=0 ttl=30 time=403.366 ms
+64 bytes from 46.17.63.250: icmp_seq=1 ttl=30 time=338.468 ms
+64 bytes from 46.17.63.250: icmp_seq=2 ttl=30 time=336.076 ms
+
+--- 46.17.63.250 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
+	\end{lstlisting}
+%alt data
+%this is in london
+\end{frame}
+
+\begin{frame}{Private Wide Area Network Links}
+1850: Paul Reuter establishes a carrier pigeon service between financial hubs in Germany and Belgium
+
+2010: Spread Networks lays an optic fiber network between Chicago and New Jersey
+
+\includegraphics[scale=0.08]{assets/map.jpg}
+
+2012: McKay Brothers installs an overground microwave tower relay
+
+2017: Go West consortium consolidates fiber optic, microwave, and undersea cables between Chicago and Tokyo
+
+Supposedly, shortwave radio can be bounced off the ionosphere to traverse oceans faster than the speed of light in glass.
+% https://spectrum.ieee.org/wall-street-tries-shortwave-radio-to-make-highfrequency-trades-across-the-atlantic
+\end{frame}
+
+\begin{frame}{Physical Media}
+Latency is either along the cable or on one of the ends.
+
+The longer the distance, the more we care about effects that scale linearly with distance.
+
+For private WAN links, we care mostly about the \textbf{propagation delay} of the medium, and the overhead required to remedy \textbf{attenuation}.
+%Rainy days might have less adverse selection in presence of microwave towers
+%Pictures of copper, fiber, and repeaters
+%fiber: single mode, multi-mode
+
+%throughput, PAM
+
+	\includegraphics[scale=0.5]{assets/arista.png}
+\end{frame}
+
+\subsection{Colocation}
+\begin{frame}{Direct Market Access}
+	\begin{block}{}
+		\scriptsize
+		Remote connection $<$ Proximity hosting $<$ Primary colocation
+	\end{block}
+	%Also crypto eg AWS EC2
+	%Equalisation is often a strong consideration especially when latency is very deterministic
+	\includegraphics[scale=0.035]{assets/shfe.jpg}
+	\includegraphics[scale=0.03]{assets/hkex.png}
+	\includegraphics[scale=0.25]{assets/review.png}
+	\pause
+	\begin{block}{Jan 19 (Reuters)}
+		\small
+		China's securities regulator has asked brokers to remove client-dedicated servers from data centers in local exchanges, a move that will deprive rapid-trading "flash boys" of an edge against other investors, people with knowledge of the matter said.
+		High-frequency traders in China have long used servers situated at data centers run by futures and stock exchanges and owned by brokers to execute trades as the physical adjacency shaves off milliseconds or even microseconds.
+	\end{block}
+	% https://www.reuters.com/world/china/china-curbs-flash-boys-access-exchange-data-sources-say-2026-01-19/
+\end{frame}
+
+\sectionquote{\includegraphics[scale=0.15]{assets/cat5.jpg} \\ ``This new form of communication could have some utility.'' Guglielmo Marconi \\ \includegraphics[scale=0.04]{assets/onion.jpg}}
+\section{Networking}
+\begin{frame}{Networking Stack}
+	\includegraphics[scale=0.6]{assets/stack.png}
+\end{frame}
+
+\begin{frame}{Hardware}
+\begin{itemize}
+	\item 1969: NPL network becomes operational, governed by a central `routing' computer rather than an L1 crosspoint
+	\item 1977: Patent granted for Ethernet, introducing CSMA/CD
+	\item 1986: HP announces StarLAN, one of the first Ethernet hubs.
+	\item 1986: DEC introduces the LANBridge 100 with a software-level MAC table and selective casting.
+	\item 1989: Kalpana introduces EtherSwitch with a hardware-level MAC table, allowing half-duplex cut-through switching
+	\item 1995: Cisco releases the Catalyst 5000 switch, supporting multicast switching
+	\item 1999: Cisco releases the Catalyst 6000 switch, supporting Pulse Amplitude Modulation
+\end{itemize}
+%Progress in many ways by commercial requirements different to those of HFT, so some of the older stuff still gets used
+%Why ``dark fiber'' matters. collisions, errors, duplex mismatch
+\end{frame}
+
+\begin{frame}{L2: Ethernet}
+\includegraphics[scale=0.37]{assets/ethernet.png}
+%since we get size upfront maybe we can exploit this
+%jumbo frames - nonstandard
+%(uni/multi/broad)cast
+%use of mac address to identify maker of device
+\end{frame}
+
+\begin{frame}{L3: IP(v4)}
+\includegraphics[scale=0.37]{assets/ipv4.png}
+\end{frame}
+
+\begin{frame}{L4: UDP}
+\includegraphics[scale=0.37]{assets/udp.png}
+%seq nums
+%checksum depends on payload so might tell us something about the contents
+%PCAP Example
+\end{frame}
+
+\begin{frame}{L4: TCP}
+%byzantine generals, handshake logic etc
+\end{frame}
+
+\begin{frame}{Exchange Protocols}
+%Execution
+%Market Data
+%OUCH,OMNET,FIX
+% message structure, https://www.nasdaq.com/Options_Order_Feed
+% order types
+\end{frame}
+
+
+\sectionquote{``We affirm that the world's magnificence has been enriched by a new beauty: \\the beauty of speed.'' Filippo Marinetti}
+\section{Execution}
+
+\begin{frame}{Colocation Topology}
+\includegraphics[scale=0.4]{assets/tse.png}
+%exchange documentation is a starting point but cannot always be fully trusted
+
+%https://www.reddit.com/r/chipdesign/comments/1arh2vr/what_is_a_phy/
+
+%https://en.wikipedia.org/wiki/Gateway_(telecommunications) - Gateways are servers. https://www.nasdaqtrader.com/Trader.aspx
+
+\end{frame}
+
+\begin{frame}{Externalities}
+
+\begin{block}{}
+	``What if you want to be a bit more unpleasant? How about you work out \ldots \textbf{which is the best gateway to connect to?} \ldots You can start sending your orders through that.
+
+	What about all these \textbf{other gateways}? What if you start stuffing orders through those other gateways that you don't care for matching? \ldots They're now \textbf{stuffed up with traffic} so other people can't compete.
+
+	Then you go through the gateway that you have set up which you know is fast, and you're going to send your orders through nice and quick.'' Martin Thompson, \textit{Evolution of Financial Exchange Architecture} %https://www.infoq.com/presentations/financial-exchange-architecture/
+\end{block}
+%denial of service attack
+% idempotency
+% Compliance: "There is no such thing as compliance, only shades of commerciality." Because people often behave themselves and it is not so easy to tell when they don't, a lot of these regulations are never tested.
+
+\pause
+
+\textbf{Load balancers} help accomodate the large volume of data moving through the network, particularly during significant market events.
+
+Exchanges often impose limits on throughput (`\textbf{transactions per second}'). Limits might be per-session, per-user, etc.
+
+%https://news.ycombinator.com/item?id=30117637
+\end{frame}
+
+\begin{frame}{Compliance}
+
+\begin{block}{}
+	In order to ensure every EP can trade in a fair and orderly market, activities including the following will be considered to be in violation of the above principles and inconsistent with the proper usage of the Exchange’s trading systems, and are therefore prohibited:
+	\begin{enumerate}[label=\alph*)]
+		\item Deliberate fragmentation of Transmission Control Protocol (TCP) messages (‘packet splitting’);
+		\item Deliberate retransmission of TCP or application layer messages;
+		\item Deliberate transmission of corrupt network packets;
+		\item Inappropriate/excessive use of non-trading messages such as heartbeat, connection management; and
+		\item Hold up or interfere with normal queuing and processing of network or application messages.
+	\end{enumerate}
+\end{block}
+% https://www.hkex.com.hk/-/media/HKEX-Market/Services/Circulars-and-Notices/Participant-and-Members-Circulars/SEHK/2025/CT08525E.pdf
+\end{frame}
+
+\begin{frame}{Queueing Models}
+	%Probabilistic queueing models. https://en.wikipedia.org/wiki/Queueing_theory#External_links
+	%store-and-forward congestion, backpressure, etc. ("The hurrier I go, the behinder I get." alice in wonderland)
+
+	Suppose all participants have independent latency with mean $\mu_i$ and a common standard deviation $\sigma$.
+
+	If we model latency as a negative Gumbel distribution, the probability of being fastest is conveniently proportional to $\exp\left(\frac{\pi}{\sqrt{6}} \cdot \frac{-\mu_i}{\sigma}\right)$.
+
+	If every participant sends $n_i$ independent copies of their message, the probability of being fastest is proportional to $n_i \cdot \exp\left(\frac{\pi}{\sqrt{6}} \cdot \frac{-\mu_i}{\sigma}\right).
+
+	\begin{center}
+		\begin{tikzpicture}[
+		    >=stealth,
+		    every node/.style={circle, draw, minimum size=7mm, inner sep=0pt},
+		    arrow/.style={->, thick}
+		]
+			\node (a1) at (0, 1.5) {};
+			\node (a2) at (0, 0) {};
+			\node (a3) at (0,-1.5) {};
+
+			\node (b1) at (3, 1.5) {};
+			\node (b2) at (3, 0.5) {};
+			\node (b3) at (3,-0.5) {};
+			\node (b4) at (3,-1.5) {};
+
+			\node (c1) at (6, 0) {};
+
+			\draw[arrow] (a1) -- (b1);
+			\draw[arrow] (a1) -- (b2);
+
+			\draw[arrow] (a2) -- (b2);
+			\draw[arrow] (a2) -- (b3);
+
+			\draw[arrow] (a3) -- (b3);
+			\draw[arrow] (a3) -- (b4);
+
+			\draw[arrow] (b1) -- (c1);
+			\draw[arrow] (b2) -- (c1);
+			\draw[arrow] (b3) -- (c1);
+			\draw[arrow] (b4) -- (c1);
+		\end{tikzpicture}
+	\end{center}
+	%supermarket model
+
+	Of course, the latencies are very often not independent.
+\end{frame}
+
+\begin{frame}{Lottery Game}
+\begin{example}{}
+	An online lottery website is offering a \$1m jackpot.
+
+	Unfortunately, because they vibecoded the website, nobody is able to buy any tickets. Even worse, $n$ users have each been given one free ticket.
+
+	Each number $i$ has some probability $p_i$ of winning, in which case the jackpot will be split amongst all players who chose $i$. If nobody wins, the jackpot will not pay out.
+
+	How should the players choose their numbers?
+\end{example}
+
+\end{frame}
+
+\begin{frame}{Lottery Game Solution}
+
+If a player chooses each number $i$ with probability $\pi_i$, and other players with probability $\pi_i'$, the player's expected payoff (in millions of dollars) is
+
+\begin{align*}
+		& \pi_i \cdot p_i \cdot \left(\sum_{k=0}^{n-1}\frac{1}{1+k}\binom{n-1}{k} \pi_i'^k (1-\pi_i')^{n-1-k}\right) \\
+	=	& \pi_i \cdot p_i \cdot \left(\sum_{k=0}^{n-1} \left(\int_0^1 x^k dx\right)\binom{n-1}{k} (\pi_i')^k(1-\pi_i')^{n-1-k} \right) \\
+	=	& \pi_i \cdot p_i \cdot \int_0^1 \left(\sum_{k=0}^{n-1} \binom{n-1}{k} (\pi_i'\cdot x)^k (1-\pi_i')^{n-1-k} \right)dx \\
+	=	& \pi_i \cdot p_i \cdot \int_0^1 (1 - \pi_i' + \pi_i'\cdot x)^{n-1} dx = \pi_i \cdot p_i \cdot \frac{1 - (1-\pi_i')^n}{n\pi_i'}.
+\end{align*}
+
+For a symmetric equilibrium, we require that $p_i \cdot \frac{1 - (1-\pi_i')^n}{n\pi_i'}$ is the same for all $i$. If $(1-\pi_i')^n$ is negligible this reduces to $\pi_i'\propto p_i$.
+\end{frame}
+
+\sectionquote{``The most amazing achievement of the computer software industry is its continuing cancellation of the steady and staggering gains made by the computer hardware industry.'' Henry Peteroski}
+\section{Matching Engine}
+The main goal of matching engine design is \textbf{reliability}. For the exchange, latency is a secondary consideration.
+
+A matching engine needs to do the following:
+\begin{itemize}
+	\item Handle trading session initialisation and publication of reference data
+	\item Capture messages from the network and assign an order in which they are to be processed
+	\item Parse and validate messages, including risk checks
+	\item Apply valid changes to \textbf{alter the order book state}
+	\item \textbf{Produce trades} when appropriate conditions are met
+	\item Log market events for clearing \& regulatory review
+	\item Publish market events \& order status back to participants
+	\item Handle heartbeats, disconnects, and recovery
+\end{itemize}
+
+
+%Demo a system design and show how each of the following fall out.
+
+
+%Sharded vs. partitioned vs. monolithic. Cross-product congestion, ordering of events
+
+%Software-level networking, interrupts, etc.
+%CLOB. Priority. How to efficiently maintain.
+%Order entry must be serialised. Perhaps even across products due to eg capitalisation requirements & position limits (why do exchange-side position limits exist).
+%    Open question I am not yet sure about: effects of a "lock" on the user for eg cross-asset position limit checking? seems cache-ish
+%
+%self-match prevention & cancellation disadvantage
+
+%Metadata, look for patterns. https://security.stackexchange.com/questions/216369/is-exposing-enumerated-ids-a-bad-idea-if-precautions-are-taken check databento sample PCAPs to see if obvious
+%
+%# Cache warming
+%can in principle apply to anything with a cpu, could be gateways or the ME core itself
+%a bit tricky because we dont know the internals of the matching engine so hard to say what is cached
+
+%User-level locks for some message types and not others. Eg mass quote
+
+%Software-level queues (beyond gateways, in threads)
+
+%Adverse selection: arises when edge reqs are different for instance
+
+%EC2 instance that handles a matching engine, a BTC WAN link, and external order entry (dumber, slower participants)
+%Two EC2 instances (taker-only, market-maker) that compete for taking. MM risk limits naturally cause tradeable prices to move in the direction of dumb flow (eg based on stale base prices) regardless of fair value.
+%Subscriber with dashboard for order book + btc price, P&L (taker-only vs maker) etc. plus tuning knobs for the players and the matching engine
+
+\sectionquote{``The race is not to the swift, nor the battle to the strong \ldots but time and chance happeneth to them all.'' Ecclesiastes \\ ``The race is not always to the swift, nor the battle to the strong – but that’s the way to bet.'' Anon.}
+\section{Market Data}
+%Demo: Burstiness -> added latency, private feed (acks, traded, canaries)
+
+%Market data: incremental, snapshot, etc. 
+% https://medium.databento.com/analyzing-private-fills-and-canary-orders-with-databentos-high-precision-market-data-timestamps-8cb12f82a1a3
+%
+%## Feed Arbitration
+% https://ieeexplore.ieee.org/document/6718377
+%
+%## Delay modeling
+%Jitter, tail latency, queueing
+%Fixed, random, conditional, autocorrelated. Predictive of future stuff (can leave vague-ish). 
+
+\sectionquote{``You don't need to be an engineer to be a racing driver, but you do need Mechanical Sympathy.'' Jackie Stewart}
+\section{Wire-to-wire}
+%NIC, rx queue (and other tcpdirect), drop-copy
+%might have more than one NIC eg to send multiple packets at a time
+%SmartNIC, FPGA in NIC, PCIe
+%https://www.reddit.com/r/networking/comments/1l5tuho/difference_between_nic_dma_ring_buffer_and_rx/
+%
+%Decision to make a trade. Modeling, adverse selection, etc.
+%concept of "Hotpath", precomputation of as much as possible
+%
+%## Kernel Bypass
+%interrupts (I think requires buffer to become full enough that NIC sends an interrupt) vs polling (constant checking)
+%direct memory access
+%
+%## Packet splitting
+%Pre-sending, out-of-order sending, subsequent invalidation, etc.
+%
+%## Negative latency
+%
+
+%Hardware
+%Trigger-based. Book event simulation.
+%Trigger refresh throughput
+%Hardware is expensive to buy, expensive to program, expensive to maintain. The cases when it's useful (low jitter) are cases where marginal gains (but not necessarily step changes) are going to be not that useful
+
+\sectionquote{``All great events hang by a hair.'' Napoleon}
+\section{Hardware Design}
+
+%FPGA design; clocks, clock edges, overclocking. talk about different NIC models w pros/cons.
+%SystemVerilog example
+
+\sectionquote{``Time is the inexorable process of doing computation.'' Stephen Wolfram}
+\section{Software Design}
+%## Software Autotrading
+%Time complexity picture. EMAs, exp weighted microprice (pose as a puzzle, whats best microprice update time complexity you can get with certain properties), etc.
+%
+%Making fast machine code
+%Profiling
+%
+% https://x.com/BrettHarrison/status/2084642796888015328?s=20
+%structs, parsing
+%interrupt storms
+%OS-level stuff, three easy pieces, async programming
+%threads, pinned threads
+%CPUs and von neumann architecture
+%Overclocking https://www.blackcoretech.com/
+%fetch decode execute
+%Tomasulo algo
+%Cache invalidation, latency of different cache levels. LFU/LRU algorithm. (can mention swap memory even though not so relevant here)
+% "There are 2 hard problems in computer science: cache invalidation, naming things, and off-by-1 errors"
+%Branch prediction incl perceptron-based. "Time forks perpetually toward innumerable futures." Borges
+%Why linked lists suck
+%x-free programming https://chatgpt.com/share/6a9817de-0990-83ec-b578-2bbf2ef877cb
+%garbage collection
+%SIMD, multi-core systems. Parallelisation is nice
+%
+%https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/6/html/performance_tuning_guide/main-network#s-network-future
+
+\sectionquote{``There is no science apart from the general. \\ It may even be said that the very object of the exact sciences is to spare us these direct verifications.'' Henri Poincaré}
+\section{Programming}
+%### C++
+% why compile instead of interpret. frontload work + checks to handle added complexity
+%godbolt demo
+%
+%source
+%AST
+%compiler IR
+%assembly
+%instructions
+%-O0 vs -O3
+%inlining
+%branch elimination
+%virtual calls
+%bounds checks
+%vectorisation
+%profiler-guided optimisation
+%
+%optimising some actual code live. Start with how an exchange would implement a CLOB, and go to how a HFT would implement it.
+%
+% rust/ocaml/etc
+%
+
+
+%start with the ethernet standard (and 10G docs), the TCP/UDP/IP RFCs, and lower level stuff like 64/66b and MAC/PHYs. Protocol docs like soupbinTCP, FIX/FIXP, ITCH/PITCH, MDP3, etc
+
+%Profiler to identify unpredictable branches
+%https://github.com/janestreet/magic-trace
+%https://blog.janestreet.com/finding-memory-leaks-with-memtrace/
+%
+%https://www.hudsonrivertrading.com/hrtbeat/optimising-compiler-performance-a-case-for-devirtualisation/
+%
+%https://www.hudsonrivertrading.com/hrtbeat/low-latency-optimization-part-1/
+%
+%https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_for_real_time/8/html-single/optimizing_rhel_8_for_real_time_for_low_latency_operation/index#proc_reducing-cpu-performance-spikes_optimizing-RHEL8-for-real-time-for-low-latency-operation
+%
+%https://docs.kernel.org/admin-guide/kernel-per-CPU-kthreads.html
+
+\section{GPU Inference}
+%## GPU inference
+% https://x.com/BrettHarrison/status/1800954431552303225?s=20
+%CUDA, warps
+%talk about pros/cons of different GPU models, how to evaluate
+%Why trees are slow. Universal approximation theorem does not apply for shallow forests.
+%Fitting in memory. Quantisation, multiple GPUs (sharding), etc.; cross-sectional common components; state-based models for O(n) sequence processing. Caching model components with no new info.
+
+%TPUs, systolic arrays
+
+\section{Bibliography}
+\begin{frame}{Useful}
+	\begin{itemize}
+		\item 
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Classics \& Mentioned}
+	\begin{itemize}
+		\item 
+	\end{itemize}
+\end{frame}
+\end{document}
+
+%talk is free of AI slop
+%
+%
+%Note existence of previous talk
+%
+%note at some point usefulness of microstructure for MFT stuff
+%
+%
+%"Eternity is in love with the productions of time." William Blake
+%"Truth was the only daughter of Time." Leonardo da Vinci
+%"Time drives everything before it, and is able to bring with it good as well as evil, and evil as well as good." Niccolò Machiavelli,
+%"Time is the most valuable thing a man can spend." Theophrastus
+%"Time is a necessary representation, lying at the foundation of all our intuitions ... In it alone is all reality of phænomena possible. These may all be annihilated in thought, but time itself, as the universal condition of their possibility, cannot be so annulled." Kant
+%"Capital, in its ultimate self-definition, is nothing beside the abstract accelerative social factor. Its positive cybernetic schema exhausts it.  Runaway consumes its identity." Nick Land
+%"Entropy and extropy have opposing time-signatures, so that time-reversal is a relatively banal cosmological fact. ‘We’ inhabit a bubble of backwards time (whoever we are), whilst immersed in a cosmic environment which runs overwhelmingly in the opposite direction. If reality is harsh and strange, that’s why." Nick Land
+%"You cannot conquer Time." W. H. Auden
+%"Nature to be commanded must be obeyed; and that which in contemplation is as the cause is in operation as the rule." Francis Bacon
+%"I often say that when you can measure what you are speaking about, and express it in numbers, you know something about it; but when you cannot measure it, when you cannot express it in numbers, your knowledge is of a meagre and unsatisfactory kind; it may be the beginning of knowledge, but you have scarcely, in your thoughts, advanced to the stage of science, whatever the matter may be." William Thomson, Lord Kelvin
+%"As eternity is reckoned, there's a lifetime in a second." Piet Hein
+%"To every thing there is a season, and a time to every purpose under the heaven ... A time to get, and a time to lose; a time to keep, and a time to cast away." Ecclesiastes
+%"Time is not composed of indivisible nows any more than any other magnitude is composed of indivisibles." Aristotle
+%("Ease and speed in doing a thing do not give the work lasting solidity or exactness of beauty." Plutarch, Life of Pericles.)
+%"Science is what we understand well enough to explain to a computer. Art is everything else we do." Donald Knuth
+%\sectionquote{``When wireless is perfectly applied the whole earth will be converted into a huge brain, which in fact it is, all things being particles of a real and rhythmic whole.'' Nikola Tesla}
+%\sectionquote{``Science is when it works but shouldn’t. Engineering is when it doesn’t work but should.'' Sam Altman}
+%"being so many different sizes in a day is very confusing" alice in wonderland
+
+
+
+%https://databento.com/blog/introduction-matching-engines
+
+%
+%# Trading as an engineering problem. Why do you care?
+%You get to build things that do things.

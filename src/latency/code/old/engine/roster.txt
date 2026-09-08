@@ -1,0 +1,6 @@
+# Known sender ids -- validation only checks membership here ("does the
+# user exist"), nothing about ports. Must match python/participants.py.
+1
+2
+3
+4

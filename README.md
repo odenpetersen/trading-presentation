@@ -2,7 +2,7 @@ Please feel free to share the link to this repo.
 
 For any corrections, feel free to message me (e.g. firstname dot lastname at gmail) or add an issue to the repository.
 
-[Slides](https://github.com/odenpetersen/trading-presentation/blob/main/src/presentation.pdf)
+[Slides](https://github.com/odenpetersen/trading-presentation/blob/main/src/systematic/presentation.pdf)
 
 [Recording:](https://www.youtube.com/watch?v=hYmR5qk4z8w)
 <p align="center">

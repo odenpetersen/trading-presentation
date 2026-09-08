@@ -1,0 +1,28 @@
+\frametitle{Internetworking}
+Things that are further away usually take longer to get a reply from:
+	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+> ping -c 3 192.168.0.109
+PING 192.168.0.109 (192.168.0.109): 56 data bytes
+64 bytes from 192.168.0.109: icmp_seq=0 ttl=64 time=2.593 ms
+64 bytes from 192.168.0.109: icmp_seq=1 ttl=64 time=12.022 ms
+64 bytes from 192.168.0.109: icmp_seq=2 ttl=64 time=53.092 ms
+
+--- 192.168.0.109 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 2.593/22.569/53.092/21.924 ms
+
+	\end{lstlisting}
+	\noindent\rule{\linewidth}{0.4pt}
+	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+> ping -c 3 46.17.63.250
+PING 46.17.63.250 (46.17.63.250): 56 data bytes
+64 bytes from 46.17.63.250: icmp_seq=0 ttl=30 time=403.366 ms
+64 bytes from 46.17.63.250: icmp_seq=1 ttl=30 time=338.468 ms
+64 bytes from 46.17.63.250: icmp_seq=2 ttl=30 time=336.076 ms
+
+--- 46.17.63.250 ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
+	\end{lstlisting}
+%alt data
+%this is in london
