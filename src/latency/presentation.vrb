@@ -1,28 +1,33 @@
-\frametitle{Internetworking}
-Things that are further away usually take longer to get a reply from:
-	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
-> ping -c 3 192.168.0.109
-PING 192.168.0.109 (192.168.0.109): 56 data bytes
-64 bytes from 192.168.0.109: icmp_seq=0 ttl=64 time=2.593 ms
-64 bytes from 192.168.0.109: icmp_seq=1 ttl=64 time=12.022 ms
-64 bytes from 192.168.0.109: icmp_seq=2 ttl=64 time=53.092 ms
-
---- 192.168.0.109 ping statistics ---
-3 packets transmitted, 3 packets received, 0.0% packet loss
-round-trip min/avg/max/stddev = 2.593/22.569/53.092/21.924 ms
-
-	\end{lstlisting}
-	\noindent\rule{\linewidth}{0.4pt}
-	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
-> ping -c 3 46.17.63.250
-PING 46.17.63.250 (46.17.63.250): 56 data bytes
-64 bytes from 46.17.63.250: icmp_seq=0 ttl=30 time=403.366 ms
-64 bytes from 46.17.63.250: icmp_seq=1 ttl=30 time=338.468 ms
-64 bytes from 46.17.63.250: icmp_seq=2 ttl=30 time=336.076 ms
-
---- 46.17.63.250 ping statistics ---
-3 packets transmitted, 3 packets received, 0.0% packet loss
-round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
-	\end{lstlisting}
-%alt data
-%this is in london
+\frametitle{Private Fill Message Example}
+\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\tiny ]
+struct BO5 { // Firm Order Book VIB
+	struct broadcast_hdr { ...  }
+	struct sub_item_hdr { UINT16_T named_struct_n; UINT16_T size_n }
+	struct trade_report_1_trans { // Named struct no: 34021
+		struct transaction_type {
+			CHAR central_module_c; CHAR server_type_c;
+			UINT16_T transaction_number_n // Transaction Type Number
+		}
+		struct series { ...  }
+		struct order_var {
+			INT64_T mp_quantity_i; INT32_T premium_i; UINT32_T block_n;
+			UINT16_T time_validity_n; UINT16_T exch_order_type_n;
+			UINT16_T trigger_order_time_validity_n; char[16] ex_client_s;
+			char[15] customer_info_s; UINT8_T open_close_req_c;
+			UINT8_T bid_or_ask_c; UINT8_T ext_t_state_c;
+			UINT8_T order_type_c; UINT8_T stop_condition_c; char[2] filler_2_s;
+%Metadata, look for patterns. https://security.stackexchange.com/questions/216369/is-exposing-enumerated-ids-a-bad-idea-if-precautions-are-taken check databento sample PCAPs to see if obvious
+		}
+		struct party {char[2] country_id_s; char[5] ex_customer_s; CHAR filler_1_s}
+		CHAR[32] exchange_info_s // Exchange, Information
+		struct give_up_member {
+			char[2] country_id_s; char[5] ex_customer_s; CHAR filler_1_s;
+		}
+		char[8] settlement_date_s // Date, Settlement
+		char[8] time_of_agreement_date_s // Time of agreement, date part
+		char[6] time_of_agreement_time_s // Time of agreement, time part
+		UINT8_T deferred_publication_c // Deferred Publication
+		CHAR filler_1_s // Filler
+	}
+}
+\end{lstlisting}

@@ -10,7 +10,6 @@
 \usepackage{hyperref} % for clickable links
 \usepackage{tikz}
 \usepackage{listings}
-\usepackage{enumitem}
 
 
 % Title info
@@ -87,16 +86,21 @@
 	% Fast can be problematic because it keeps humans out of the loop. Need risk limits and controls etc.
 \end{frame}
 
+\begin{frame}{Electronic Trading}
+	%order types, message types
+	%self-match prevention, cancellation disadvantage
+\end{frame}
+
 \begin{frame}[fragile]{Latency}
-	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
 > date +%s%N
 1788413610858617734
-	\end{lstlisting}
-Epoch timestamp:
-\begin{math}
-	\underbrace{1788413610}_{\text{epoch seconds}}\underbrace{858}_{\text{millis}} \underbrace{617}_{\mu\text{s}} \underbrace{734}_{\text{nanos}}
-\end{math}
-	\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+\end{lstlisting}
+	Epoch timestamp:
+	\begin{math}
+		\underbrace{1788413610}_{\text{epoch seconds}}\underbrace{858}_{\text{millis}} \underbrace{617}_{\mu\text{s}} \underbrace{734}_{\text{nanos}}
+	\end{math}
+\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
 > ping -c 5 192.168.0.109
 PING 192.168.0.109 (192.168.0.109): 56 data bytes
 64 bytes from 192.168.0.109: icmp_seq=0 ttl=64 time=3.763 ms
@@ -108,9 +112,8 @@ PING 192.168.0.109 (192.168.0.109): 56 data bytes
 --- 192.168.0.109 ping statistics ---
 5 packets transmitted, 5 packets received, 0.0% packet loss
 round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
-	\end{lstlisting}
+\end{lstlisting}
 %Question to ponder: why so much variation?
-
 \end{frame}
 
 \begin{frame}{Time is Money}
@@ -193,6 +196,8 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	\end{lstlisting}
 %alt data
 %this is in london
+
+%also, the more work you do, the longer it will usually take
 \end{frame}
 
 \begin{frame}{Private Wide Area Network Links}
@@ -296,6 +301,16 @@ For private WAN links, we care mostly about the \textbf{propagation delay} of th
 % order types
 \end{frame}
 
+\begin{frame}{Network Timestamping}
+	%Hardware vs software timestamping
+	Timestamping of messages may be done at multiple points in the system (e.g. \texttt{timestamp\_match} and \texttt{timestamp\_publication}).
+
+	Timestamps from different clocks (e.g. from different machines) are not trivial to compare owing to clock drift and clock sync inaccuracies (e.g. caused by network asymmetry).
+
+	Usually the timestamp is calculated according to the first bit of the Ethernet header (start-of-frame). The last bit can be calculated given the bandwidth of the transmission.
+
+	It is possible to observe negative apparent latency when naively comparing timestamps from poorly synced clocks.
+\end{frame}
 
 \sectionquote{``We affirm that the world's magnificence has been enriched by a new beauty: \\the beauty of speed.'' Filippo Marinetti}
 \section{Execution}
@@ -336,7 +351,7 @@ Exchanges often impose limits on throughput (`\textbf{transactions per second}')
 
 \begin{block}{}
 	In order to ensure every EP can trade in a fair and orderly market, activities including the following will be considered to be in violation of the above principles and inconsistent with the proper usage of the Exchange’s trading systems, and are therefore prohibited:
-	\begin{enumerate}[label=\alph*)]
+	\begin{enumerate}
 		\item Deliberate fragmentation of Transmission Control Protocol (TCP) messages (‘packet splitting’);
 		\item Deliberate retransmission of TCP or application layer messages;
 		\item Deliberate transmission of corrupt network packets;
@@ -351,12 +366,14 @@ Exchanges often impose limits on throughput (`\textbf{transactions per second}')
 	%Probabilistic queueing models. https://en.wikipedia.org/wiki/Queueing_theory#External_links
 	%store-and-forward congestion, backpressure, etc. ("The hurrier I go, the behinder I get." alice in wonderland)
 
-	Suppose all participants have independent latency with mean $\mu_i$ and a common standard deviation $\sigma$.
+	Suppose all participants have independent latency with mean $\mu_i$ and a common standard deviation $\sigma$ (also called \textbf{jitter}).
 
 	If we model latency as a negative Gumbel distribution, the probability of being fastest is conveniently proportional to $\exp\left(\frac{\pi}{\sqrt{6}} \cdot \frac{-\mu_i}{\sigma}\right)$.
+	%plot gumbel pdf
 
-	If every participant sends $n_i$ independent copies of their message, the probability of being fastest is proportional to $n_i \cdot \exp\left(\frac{\pi}{\sqrt{6}} \cdot \frac{-\mu_i}{\sigma}\right).
+	If every participant sends $n_i$ independent copies of their message, the probability of being fastest is proportional to $n_i \cdot \exp\left(\frac{\pi}{\sqrt{6}} \cdot \frac{-\mu_i}{\sigma}\right)$.
 
+	Of course, the latencies are very often not independent.
 	\begin{center}
 		\begin{tikzpicture}[
 		    >=stealth,
@@ -390,75 +407,81 @@ Exchanges often impose limits on throughput (`\textbf{transactions per second}')
 		\end{tikzpicture}
 	\end{center}
 	%supermarket model
-
-	Of course, the latencies are very often not independent.
 \end{frame}
 
 \begin{frame}{Lottery Game}
-\begin{example}{}
-	An online lottery website is offering a \$1m jackpot.
+	\begin{block}{}
+		An online lottery website is offering a \$1m jackpot.
 
-	Unfortunately, because they vibecoded the website, nobody is able to buy any tickets. Even worse, $n$ users have each been given one free ticket.
+		Unfortunately, because they vibecoded the website, nobody is able to buy any tickets. Even worse, $n$ users have each been given one free ticket.
 
-	Each number $i$ has some probability $p_i$ of winning, in which case the jackpot will be split amongst all players who chose $i$. If nobody wins, the jackpot will not pay out.
+		Each number $i$ has some probability $p_i$ of winning, in which case the jackpot will be split amongst all players who chose $i$. If nobody wins, the jackpot will not pay out.
 
-	How should the players choose their numbers?
-\end{example}
+		How should the players choose their numbers?
+	\end{block}
 
 \end{frame}
 
 \begin{frame}{Lottery Game Solution}
 
-If a player chooses each number $i$ with probability $\pi_i$, and other players with probability $\pi_i'$, the player's expected payoff (in millions of dollars) is
+	If a player chooses each number $i$ with probability $\pi_i$, and other players with probability $\pi_i'$, the player's expected payoff (in millions of dollars) is
 
-\begin{align*}
-		& \pi_i \cdot p_i \cdot \left(\sum_{k=0}^{n-1}\frac{1}{1+k}\binom{n-1}{k} \pi_i'^k (1-\pi_i')^{n-1-k}\right) \\
-	=	& \pi_i \cdot p_i \cdot \left(\sum_{k=0}^{n-1} \left(\int_0^1 x^k dx\right)\binom{n-1}{k} (\pi_i')^k(1-\pi_i')^{n-1-k} \right) \\
-	=	& \pi_i \cdot p_i \cdot \int_0^1 \left(\sum_{k=0}^{n-1} \binom{n-1}{k} (\pi_i'\cdot x)^k (1-\pi_i')^{n-1-k} \right)dx \\
-	=	& \pi_i \cdot p_i \cdot \int_0^1 (1 - \pi_i' + \pi_i'\cdot x)^{n-1} dx = \pi_i \cdot p_i \cdot \frac{1 - (1-\pi_i')^n}{n\pi_i'}.
-\end{align*}
+	\begin{align*}
+			& \pi_i \cdot p_i \cdot \left(\sum_{k=0}^{n-1}\frac{1}{1+k}\binom{n-1}{k} \pi_i'^k (1-\pi_i')^{n-1-k}\right) \\
+		=	& \pi_i \cdot p_i \cdot \left(\sum_{k=0}^{n-1} \left(\int_0^1 x^k dx\right)\binom{n-1}{k} (\pi_i')^k(1-\pi_i')^{n-1-k} \right) \\
+		=	& \pi_i \cdot p_i \cdot \int_0^1 \left(\sum_{k=0}^{n-1} \binom{n-1}{k} (\pi_i'\cdot x)^k (1-\pi_i')^{n-1-k} \right)dx \\
+		=	& \pi_i \cdot p_i \cdot \int_0^1 (1 - \pi_i' + \pi_i'\cdot x)^{n-1} dx = \pi_i \cdot p_i \cdot \frac{1 - (1-\pi_i')^n}{n\pi_i'}.
+	\end{align*}
 
-For a symmetric equilibrium, we require that $p_i \cdot \frac{1 - (1-\pi_i')^n}{n\pi_i'}$ is the same for all $i$. If $(1-\pi_i')^n$ is negligible this reduces to $\pi_i'\propto p_i$.
+	For a symmetric equilibrium, we require that $p_i \cdot \frac{1 - (1-\pi_i')^n}{n\pi_i'}$ is the same for all $i$. If $(1-\pi_i')^n$ is negligible this reduces to $\pi_i'\propto p_i$.
 \end{frame}
 
 \sectionquote{``The most amazing achievement of the computer software industry is its continuing cancellation of the steady and staggering gains made by the computer hardware industry.'' Henry Peteroski}
 \section{Matching Engine}
-The main goal of matching engine design is \textbf{reliability}. For the exchange, latency is a secondary consideration.
 
-A matching engine needs to do the following:
-\begin{itemize}
-	\item Handle trading session initialisation and publication of reference data
-	\item Capture messages from the network and assign an order in which they are to be processed
-	\item Parse and validate messages, including risk checks
-	\item Apply valid changes to \textbf{alter the order book state}
-	\item \textbf{Produce trades} when appropriate conditions are met
-	\item Log market events for clearing \& regulatory review
-	\item Publish market events \& order status back to participants
-	\item Handle heartbeats, disconnects, and recovery
-\end{itemize}
+\begin{frame}{Matching Engine Responsibilities}
+	\begin{itemize}
+		\item Handle trading session initialisation and publication of reference data
+		\item Capture messages from the network and assign an order in which they are to be processed
+		\item Parse and validate messages, including risk checks
+		\item Apply valid changes to \textbf{alter the order book state}
+		\item \textbf{Produce trades} when appropriate conditions are met
+		\item Log market events for clearing \& regulatory review
+		\item Publish market events \& order status back to participants
+		\item Handle heartbeats, disconnects, and recovery
+	\end{itemize}
+\end{frame}
 
+\begin{frame}{Matching Engine Requirements}
+	The main goal of matching engine design is \textbf{reliability}. For the exchange, latency is a secondary consideration.
+	\begin{itemize}
+		\item Throughput under worst-case load
+		\begin{itemize}
+			\item Load balancing
+			\item Multi-threaded validation/parsing
+			\item Sharding/partitioning %but consider risk checks, combo books. cross-product congestion
+			\item Caching
+		\end{itemize}
+		\item Continuous availability
+		\begin{itemize}
+			\item Live backup server
+			\item Heartbeat messages
+		\end{itemize}
+		\item State machine determinism
+		\begin{itemize}
+			\item Single-threaded transaction processing
+		\end{itemize}
+		\item Fairness
+	\end{itemize}
+\end{frame}
 
-%Demo a system design and show how each of the following fall out.
-
-
-%Sharded vs. partitioned vs. monolithic. Cross-product congestion, ordering of events
-
-%Software-level networking, interrupts, etc.
+\begin{frame}{Order Book Representation}
 %CLOB. Priority. How to efficiently maintain.
-%Order entry must be serialised. Perhaps even across products due to eg capitalisation requirements & position limits (why do exchange-side position limits exist).
-%    Open question I am not yet sure about: effects of a "lock" on the user for eg cross-asset position limit checking? seems cache-ish
-%
+\end{frame}
 %self-match prevention & cancellation disadvantage
 
-%Metadata, look for patterns. https://security.stackexchange.com/questions/216369/is-exposing-enumerated-ids-a-bad-idea-if-precautions-are-taken check databento sample PCAPs to see if obvious
-%
-%# Cache warming
-%can in principle apply to anything with a cpu, could be gateways or the ME core itself
-%a bit tricky because we dont know the internals of the matching engine so hard to say what is cached
-
-%User-level locks for some message types and not others. Eg mass quote
-
-%Software-level queues (beyond gateways, in threads)
+%Dynamic gateway selection
+%Gateway cache eviction -> warming
 
 %Adverse selection: arises when edge reqs are different for instance
 
@@ -468,37 +491,167 @@ A matching engine needs to do the following:
 
 \sectionquote{``The race is not to the swift, nor the battle to the strong \ldots but time and chance happeneth to them all.'' Ecclesiastes \\ ``The race is not always to the swift, nor the battle to the strong – but that’s the way to bet.'' Anon.}
 \section{Market Data}
+\begin{frame}{Market Data Types}
+	\begin{block}{Public Feed}
+		\begin{itemize}
+			\item Trades
+			\item Depth
+			\begin{itemize}
+				\item L1: Best Bid/Offer (BBO)
+				\item L2: Level sizes
+				\item L3: Market-by-order
+				\item Incremental
+				\item Snapshot
+			\end{itemize}
+		\end{itemize}
+	\end{block}
+	\begin{block}{Private Feed}
+		\begin{itemize}
+			\item Fills
+			\item Acknowledgement of order creation/deletion
+		\end{itemize}
+	\end{block}
+
+	Often we will get the same information in more than one way. 
+%## Feed Arbitration
+% https://ieeexplore.ieee.org/document/6718377
+\end{frame}
+
+\begin{frame}[fragile]{Trade Message Example (\href{https://api2.sgx.com/sites/default/files/2026-06/OMnet_MessRef_SGX_va42.pdf}{SGX OMnet})}
+\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\tiny ]
+struct BD70 { // Trade Ticker VIB (Variable Information Broadcast)
+	struct broadcast_hdr {
+		struct broadcast_type {
+			CHAR central_module_c; CHAR server_type_c;
+			UINT16_T transaction_number_n // Transaction Type Number
+		}
+		UINT16_T items_n // Items
+		UINT16_T size_n // Size
+	}
+	struct sub_item_hdr {
+		UINT16_T named_struct_n // Named Struct, Number
+		UINT16_T size_n // Size
+	}
+	struct basic_trade_ticker { // Named struct no: 34401
+		struct series { // Named struct no: 50000
+			UINT8_T country_c; UINT8_T market_c; UINT8_T instrument_group_c;
+			UINT8_T modifier_c; UINT16_T commodity_n; UINT16_T expiration_date_n;
+			INT32_T strike_price_i
+		}
+		struct timestamp_match { UINT32_T tv_sec; INT32_T tv_nsec }
+		struct time_of_publication { UINT32_T tv_sec; INT32_T tv_nsec; }
+		UINT64_T execution_event_nbr_u // Execution number %sequence number
+		UINT32_T match_group_nbr_u // Match group number, group inside an execution %notably we dont know how many broadcasts are to come
+		INT64_T deal_quantity_i // Quantity, Deal
+		INT32_T deal_price_i // Price, Deal
+		UINT16_T segment_number_n // Segment Number
+		UINT8_T aggressive // Bid or Ask ; Of type: BID_OR_ASK_C
+		CHAR filler_1_s // Filler
+	}
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Private Fill Message Example}
+\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\tiny ]
+struct BO5 { // Firm Order Book VIB
+	struct broadcast_hdr { ...  }
+	struct sub_item_hdr { UINT16_T named_struct_n; UINT16_T size_n }
+	struct trade_report_1_trans { // Named struct no: 34021
+		struct transaction_type {
+			CHAR central_module_c; CHAR server_type_c;
+			UINT16_T transaction_number_n // Transaction Type Number
+		}
+		struct series { ...  }
+		struct order_var {
+			INT64_T mp_quantity_i; INT32_T premium_i; UINT32_T block_n;
+			UINT16_T time_validity_n; UINT16_T exch_order_type_n;
+			UINT16_T trigger_order_time_validity_n; char[16] ex_client_s;
+			char[15] customer_info_s; UINT8_T open_close_req_c;
+			UINT8_T bid_or_ask_c; UINT8_T ext_t_state_c;
+			UINT8_T order_type_c; UINT8_T stop_condition_c; char[2] filler_2_s;
+%Metadata, look for patterns. https://security.stackexchange.com/questions/216369/is-exposing-enumerated-ids-a-bad-idea-if-precautions-are-taken check databento sample PCAPs to see if obvious
+		}
+		struct party {char[2] country_id_s; char[5] ex_customer_s; CHAR filler_1_s}
+		CHAR[32] exchange_info_s // Exchange, Information
+		struct give_up_member {
+			char[2] country_id_s; char[5] ex_customer_s; CHAR filler_1_s;
+		}
+		char[8] settlement_date_s // Date, Settlement
+		char[8] time_of_agreement_date_s // Time of agreement, date part
+		char[6] time_of_agreement_time_s // Time of agreement, time part
+		UINT8_T deferred_publication_c // Deferred Publication
+		CHAR filler_1_s // Filler
+	}
+}
+\end{lstlisting}
+\end{frame}
+%If private feed is processed on a separate thread to market data, it can cause interpacket gap to depend on N
 %Demo: Burstiness -> added latency, private feed (acks, traded, canaries)
 
 %Market data: incremental, snapshot, etc. 
 % https://medium.databento.com/analyzing-private-fills-and-canary-orders-with-databentos-high-precision-market-data-timestamps-8cb12f82a1a3
-%
-%## Feed Arbitration
-% https://ieeexplore.ieee.org/document/6718377
-%
-%## Delay modeling
-%Jitter, tail latency, queueing
-%Fixed, random, conditional, autocorrelated. Predictive of future stuff (can leave vague-ish). 
+
+\begin{frame}{Publication Latency}
+	During a burst of activity, the ME may need to do post-processing of data prior to sending.
+
+	More complex transactions may take longer to be processed by the matching engine, or to traverse through the network.
+
+	Larger messages may be \textbf{packetised} and packets may be \textbf{fragmented} (according to the L2/L3 Maximum Transmission Unit).
+	%Can correlate with things we don't see
+\end{frame}
+
+\begin{frame}{Distribution Latency}
+	\begin{block}{Public Market Data}
+		This is ideally \textbf{multicast} (or broadcast) to participants depending what kinds of feeds and products they choose to subscribe to.
+
+		For fairness and latency reasons, public market data is ideally emitted only once by the matching engine NIC, then sent to a multicast switch that transmits to all relevant recipients simultaneously. Once received, packets can be further filtered or triaged by participants.
+	\end{block}
+
+	\begin{block}{Private Feed}
+		This is typically \textbf{unicast}, and the matching engine may need to decide on some reasonable order in which to send updates to participants. Depending on how this is achieved, there might be ways to gain priority in the distribution of private feed messages.
+	\end{block}
+\end{frame}
 
 \sectionquote{``You don't need to be an engineer to be a racing driver, but you do need Mechanical Sympathy.'' Jackie Stewart}
 \section{Wire-to-wire}
+\begin{frame}{Network Interface Cards}
+	%%Why need a NIC as opposed to CPU doing everything
+	%A copper pair passing into an exchange participant rack will interface with one or more \textbf{network interface cards} (NICs).% This may be through direct attach copper, an RJ45 connector, or some other housing.
+
+	%A standard `dumb' NIC will have two \textbf{network packet buffers}, one for \textbf{RX (receive)} and one for \textbf{TX (transmit)}.
+
+	%%picture of PCIe cable
+	%\begin{block}{Programmed Input/Output (PIO)}
+		%Incoming packets will first be stored in a \textbf{network packet buffer} on the NIC, then handed off to the CPU via an interconnect such as \textbf{PCIe}. This involves an \textbf{interrupt request} to be handled by the OS kernel.
+
+		%The PCIe standard defines a physical databus architecture and a packetisation format, including a special `\textbf{interrupt request}' message that asks the OS kernel to poll the data from the NIC buffer. Data will then be serially transmitted along a PCIe connection to the CPU, and serially written to RAM if register capacity is exceeded.
+	%\end{block}
+
+	%\begin{block}{Direct Memory Access (DMA)}
+		%Modern setups will generally allow for Direct Memory Access (DMA), whereby the \textbf{RX (receive) queue} is streamed directly into a dedicated section of RAM, or the \textbf{TX (transmit) queue} is populated directly from RAM.
+	%\end{block}
+	%%memory controller
+	%%ddio
+\end{frame}
+%interconnects
+%RAM
+%CPU
+
 %NIC, rx queue (and other tcpdirect), drop-copy
-%might have more than one NIC eg to send multiple packets at a time
 %SmartNIC, FPGA in NIC, PCIe
 %https://www.reddit.com/r/networking/comments/1l5tuho/difference_between_nic_dma_ring_buffer_and_rx/
-%
+
 %Decision to make a trade. Modeling, adverse selection, etc.
 %concept of "Hotpath", precomputation of as much as possible
-%
+
 %## Kernel Bypass
+%what even is a kernel
 %interrupts (I think requires buffer to become full enough that NIC sends an interrupt) vs polling (constant checking)
 %direct memory access
-%
+
 %## Packet splitting
 %Pre-sending, out-of-order sending, subsequent invalidation, etc.
-%
-%## Negative latency
-%
 
 %Hardware
 %Trigger-based. Book event simulation.
@@ -509,6 +662,8 @@ A matching engine needs to do the following:
 \section{Hardware Design}
 
 %FPGA design; clocks, clock edges, overclocking. talk about different NIC models w pros/cons.
+%timing
+%parallelism and pipelining
 %SystemVerilog example
 
 \sectionquote{``Time is the inexorable process of doing computation.'' Stephen Wolfram}
@@ -518,6 +673,7 @@ A matching engine needs to do the following:
 %
 %Making fast machine code
 %Profiling
+%userspace timing
 %
 % https://x.com/BrettHarrison/status/2084642796888015328?s=20
 %structs, parsing
@@ -529,7 +685,7 @@ A matching engine needs to do the following:
 %fetch decode execute
 %Tomasulo algo
 %Cache invalidation, latency of different cache levels. LFU/LRU algorithm. (can mention swap memory even though not so relevant here)
-% "There are 2 hard problems in computer science: cache invalidation, naming things, and off-by-1 errors"
+%"There are 2 hard problems in computer science: cache invalidation, naming things, and off-by-1 errors"
 %Branch prediction incl perceptron-based. "Time forks perpetually toward innumerable futures." Borges
 %Why linked lists suck
 %x-free programming https://chatgpt.com/share/6a9817de-0990-83ec-b578-2bbf2ef877cb
@@ -631,6 +787,7 @@ A matching engine needs to do the following:
 
 
 %https://databento.com/blog/introduction-matching-engines
+%https://api2.sgx.com/sites/default/files/2026-06/OMnet_MessRef_SGX_va42.pdf
 
 %
 %# Trading as an engineering problem. Why do you care?

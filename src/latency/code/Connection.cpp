@@ -33,12 +33,34 @@ Connection::Connection(int port, const char* remote_ip) {
 	close(listen_fd);
 }
 
-void Connection::send(const std::string& msg) {
-	::send(fd, msg.data(), msg.size(), 0);
+void Connection::send(const void* data, size_t size) {
+	auto* p = static_cast<const char*>(data);
+	size_t sent = 0;
+
+	while (sent < size) {
+		ssize_t n = ::send(fd, p + sent, size - sent, 0);
+		if (n <= 0)
+			break;
+		sent += n;
+	}
 }
 
 int Connection::receive(char* buf, int size) {
 	return recv(fd, buf, size, 0);
+}
+
+bool Connection::receive_exact(void* buf, size_t size) {
+	auto* p = static_cast<char*>(buf);
+	size_t got = 0;
+
+	while (got < size) {
+		int n = receive(p + got, size - got);
+		if (n <= 0)
+			return false;
+		got += n;
+	}
+
+	return true;
 }
 
 Connection::~Connection() {
