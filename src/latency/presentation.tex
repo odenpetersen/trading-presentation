@@ -542,6 +542,8 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 \begin{frame}{Fragmentation}
 	\begin{block}{}
 		``The virtual channels on the X.25 for ordering were only 64kbps – very slow. I figured we could hack those similarly \ldots and start filling out an order before we had one. This would save us milliseconds. You could turn the packet into something benign or invalid if you didn’t have an order.''
+
+		Matt Hurd
 	%Pre-sending, out-of-order sending, subsequent invalidation, etc.; concrete example
 	\end{block}
 
@@ -565,6 +567,8 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 		Why not \textbf{send the later part of the packet} with the next TCP sequence number plus one \textbf{and then send the middle part of the sequence out of order} with the symbol, price and quantity?
 
 		That final part of the packet had quite a large user field so we would save an awesome amount of time and gain much more than we were with the speculative send we were already doing.''
+
+		Matt Hurd
 	\end{block}
 
 	TCP guarantees delivery of a bytestream, and presentation-layer message boundaries need not align with packet boundaries.%In practice they often do
@@ -684,6 +688,8 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	\end{itemize}
 	\begin{block}{}
 		``The transition to TCP was a little messy \ldots Sometimes the feed imbalances would have severe delays, with data lagging behind tens of minutes. Once the imbalance cleared, the engines would automatically go back to trading.''
+
+		Matt Hurd
 	\end{block}
 \end{frame}
 
@@ -820,6 +826,8 @@ struct BO5 { // Firm Order Book VIB
 
 	\begin{block}{}
 		``At one later site \ldots we put in market data and it was the worst. \ldots We asked for this market data to be removed. A month or two later we paid for it to be reinstalled \ldots and now it was one of the best. \ldots I suspect some new kind of semi-permanent \textbf{round robin} positioning somewhere fixed things. There was little rhyme nor reason for many things.''
+
+		Matt Hurd
 	\end{block}
 
 	%For fairness and latency reasons, public market data is ideally emitted only once by the matching engine NIC, then sent to a multicast switch that transmits to all relevant recipients simultaneously. Once received, packets can be further filtered or triaged by participants.
@@ -1045,6 +1053,9 @@ module itch_volume #(
 \end{frame}
 
 \begin{frame}{CPUs}
+	\begin{itemize}
+		
+	\end{itemize}
 
 
 %fetch decode execute
@@ -1089,6 +1100,7 @@ module itch_volume #(
 %https://github.com/david-grs/papipp
 %cachegrind for counting cpu cycles https://stackoverflow.com/a/2588705
 %flame graph
+%x86 unique characteristics eg variable length
 \end{frame}
 
 \begin{frame}{Multitasking}
