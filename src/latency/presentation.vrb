@@ -1,33 +1,29 @@
-\frametitle{Private Fill Message Example}
-\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\tiny ]
-struct BO5 { // Firm Order Book VIB
-	struct broadcast_hdr { ...  }
-	struct sub_item_hdr { UINT16_T named_struct_n; UINT16_T size_n }
-	struct trade_report_1_trans { // Named struct no: 34021
-		struct transaction_type {
-			CHAR central_module_c; CHAR server_type_c;
-			UINT16_T transaction_number_n // Transaction Type Number
-		}
-		struct series { ...  }
-		struct order_var {
-			INT64_T mp_quantity_i; INT32_T premium_i; UINT32_T block_n;
-			UINT16_T time_validity_n; UINT16_T exch_order_type_n;
-			UINT16_T trigger_order_time_validity_n; char[16] ex_client_s;
-			char[15] customer_info_s; UINT8_T open_close_req_c;
-			UINT8_T bid_or_ask_c; UINT8_T ext_t_state_c;
-			UINT8_T order_type_c; UINT8_T stop_condition_c; char[2] filler_2_s;
-%Metadata, look for patterns. https://security.stackexchange.com/questions/216369/is-exposing-enumerated-ids-a-bad-idea-if-precautions-are-taken check databento sample PCAPs to see if obvious
-		}
-		struct party {char[2] country_id_s; char[5] ex_customer_s; CHAR filler_1_s}
-		CHAR[32] exchange_info_s // Exchange, Information
-		struct give_up_member {
-			char[2] country_id_s; char[5] ex_customer_s; CHAR filler_1_s;
-		}
-		char[8] settlement_date_s // Date, Settlement
-		char[8] time_of_agreement_date_s // Time of agreement, date part
-		char[6] time_of_agreement_time_s // Time of agreement, time part
-		UINT8_T deferred_publication_c // Deferred Publication
-		CHAR filler_1_s // Filler
-	}
-}
+\frametitle{Synchronous Design}
+Synchronous design involves updating \textbf{registers} according to \textbf{combinational functions} on each \textbf{clock edge}.
+
+	\newsavebox\lstA
+	\begin{lrbox}{\lstA}
+\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+module itch_volume #(
+    parameter int NUM_STOCKS = 4
+) (
+    input logic clk, input logic valid,
+    input logic [5:0] pos, input logic [7:0] data_byte,
+
+    input logic [31:0] buy_threshold  [NUM_STOCKS],
+    input logic [31:0] sell_threshold [NUM_STOCKS],
+
+    output logic [31:0] buy_volume  [NUM_STOCKS],
+    output logic [31:0] sell_volume [NUM_STOCKS],
+
+    output logic buy_trigger,
+    output logic sell_trigger,
+    output logic [15:0] trigger_locate
+);
 \end{lstlisting}
+	\end{lrbox}
+	\href{https://edaplayground.com/x/9qhM}{\usebox{\lstA}}%Packet slicing, only read part of packet. Concept of a HDL
+
+	The length of each \textbf{clock cycle} must be chosen so that data has time to propagate to the destination register. %Reduce complexity of each step
+
+	\textbf{Clock domain crossings} must be separated by a specialised interface to avoid data corruption. %restricted by line bandwidth in some ways

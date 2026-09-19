@@ -10,9 +10,9 @@
 \usepackage{hyperref} % for clickable links
 \usepackage{tikz}
 \usepackage{listings}
+\usepackage{xstring}
 
 \usetikzlibrary{positioning}
-
 
 % Title info
 \title[\texttt{/trading-presentation}]{Latency}
@@ -20,23 +20,100 @@
 \date{2026-09-30}
 
 % Section headers
-\newcommand{\sectionquote}[1]{\def\insertsquote{\small #1}}
+\newif\ifhasdiagram
+\hasdiagramfalse
+
+\newcommand{\sectiondiagram}[1]{%
+    \def\insertsdiagram{#1}%
+    \hasdiagramtrue
+}
+
+\newcommand{\sectionquote}[1]{%
+    \def\insertsquote{\small #1}%
+}
+
+\newcommand{\insertsdiagram}{}
 \newcommand{\insertsquote}{}
 
 \AtBeginSection[]{
-	\begin{frame}
-	\vfill
-	\centering
-	\begin{beamercolorbox}[sep=8pt,center,shadow=True,rounded=True]{title}
-		\usebeamerfont{title}\insertsectionhead\par%
-	\end{beamercolorbox}
-	\vspace{1cm}
-	{\Large\textit{\insertsquote}}\par
-	\vfill
-	\end{frame}
+    \begin{frame}
+        \vfill
+        \centering
 
-	\renewcommand{\insertsquote}{}
+        \begin{beamercolorbox}[sep=8pt,center,shadow=True,rounded=True]{title}
+            \usebeamerfont{title}\insertsectionhead\par
+        \end{beamercolorbox}
+
+        \ifhasdiagram
+            \vspace{0.1cm}
+            \diagram{\insertsdiagram}
+        \fi
+
+        \ifx\insertsquote\empty
+        \else
+            \vspace{0.1cm}
+            {\Large \insertsquote}\par
+        \fi
+
+        \vfill
+    \end{frame}
+
+    \renewcommand{\insertsquote}{}
+    \renewcommand{\insertsdiagram}{}
+    \hasdiagramfalse
 }
+
+% Diagram
+\newcommand{\diagram}[1]{%
+    \begin{center}
+    \begin{tikzpicture}[
+        >=stealth,
+        box/.style={
+            draw,
+            minimum width=2.2cm,
+            minimum height=.7cm
+        },
+        hi/.style={fill=gray!25, thick}
+    ]
+
+        \newcommand{\N}[3]{%
+            \IfStrEq{#1}{##1}
+                {\node[box,hi] (##1) at (##2) {##3};}
+                {\node[box] (##1) at (##2) {##3};}%
+        }
+
+        % Main cycle
+        \N{matching}{0,0}{Matching Engine}
+        \N{execution}{-3,-1}{Execution}
+        \N{market}{3,-1}{Market Data}
+        \N{network}{0,-2}{Network Interface}
+
+        % Hardware / software
+        \N{hardware}{0,-3.5}{Hardware}
+        \N{software}{0,-5}{Software}
+        \N{program}{3,-5}{Program}
+
+        % Main cycle
+        \draw[->] (execution.east) -- (matching.south);
+        \draw[->] (matching.south) -- (market.west);
+        \draw[->] (market.west) -- (network.north);
+        \draw[->] (network.north) -- (execution.east);
+
+        % Network / hardware
+        \draw[->] (network.south) to[bend left=15] (hardware.north);
+        \draw[->] (hardware.north) to[bend left=15] (network.south);
+
+        % Hardware / software
+        \draw[->] (hardware.south) to[bend left=15] (software.north);
+        \draw[->] (software.north) to[bend left=15] (hardware.south);
+
+        % Program
+        \draw[->] (program.west) -- (software.east);
+
+    \end{tikzpicture}
+    \end{center}%
+}
+
 \begin{document}
 
 % Title page
@@ -61,16 +138,52 @@
 	\begin{itemize}
 		\item 
 	\end{itemize}
+	%``I think you should know one level well, have a working knowledge of the level beneath you, and then \ldots be aware of the shape of the layer beneath that.'' Matt Godbolt
 	%Hopefully generally helpful for other CS topics
 	%Dancing around IP. Will tread carefully, use publicly documented sources.
 	% I have worked with too many APAC exchanges, going to avoid details of the ones I have worked with in this talk
 \end{frame}
 
-% Table of contents
 \begin{frame}{Outline}
-	\tableofcontents
+    \begin{columns}[T,onlytextwidth]
+
+        \begin{column}{0.31\textwidth}
+            \begin{minipage}[t][1.0cm][t]{\linewidth}
+                {\large\bfseries Concepts}
+            \end{minipage}
+            \rule{\linewidth}{0.6pt}
+
+            \vspace{0.3cm}
+            \tableofcontents[part=1]
+        \end{column}
+
+        \begin{column}{0.31\textwidth}
+            \begin{minipage}[t][1.0cm][t]{\linewidth}
+                {\large\bfseries Network Latency}
+            \end{minipage}
+            \rule{\linewidth}{0.6pt}
+
+            \vspace{0.3cm}
+            \tableofcontents[part=2]
+        \end{column}
+
+        \begin{column}{0.31\textwidth}
+            \begin{minipage}[t][1.0cm][t]{\linewidth}
+                {\large\bfseries System Latency}
+            \end{minipage}
+            \rule{\linewidth}{0.6pt}
+
+            \vspace{0.3cm}
+            \tableofcontents[part=3]
+        \end{column}
+
+    \end{columns}
 \end{frame}
 
+\part{Concepts}
+\begin{frame}{Part I: Concepts}
+	\tableofcontents[part=1]
+\end{frame}
 \sectionquote{``All economic activity is carried out through time. Every individual economic process occupies a certain time, and all linkages between economic processes necessarily involve longer or shorter periods of time.'' Friedrich Hayek}
 \section{Trading}
 \begin{frame}{Economic Considerations}
@@ -138,26 +251,25 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 %Empirical example with "big trade" copying alpha. Calibrate thresholds, then test various latency models.
 \end{frame}
 
-\sectionquote{\includegraphics[scale=0.4]{assets/rabbit.png} \\ ``Time exists in order that everything doesn’t happen all at once.'' Ray Cummings \\ \includegraphics[scale=0.2]{assets/crystal.jpg} \\ ``By a clock we understand anything characterized by a phenomenon passing periodically through identical phases so that \ldots all that happens in a given period is identical with all that happens in an arbitrary period.'' Albert Einstein}%16MHz
+\sectionquote{``Time exists in order that everything doesn’t happen all at once.'' Ray Cummings \\ \includegraphics[scale=0.4]{assets/rabbit.png} \\ ``By a clock we understand anything characterized by a phenomenon passing periodically through identical phases so that \ldots all that happens in a given period is identical with all that happens in an arbitrary period.'' Albert Einstein}%16MHz
 \section{Time}
 
 \begin{frame}{Clocks}
-	Quartz powered by a DC signal vibrates due to the piezoelectric effect at a reliable \textbf{reference frequency}.
-
-	A \textbf{voltage-controlled oscillator} has a frequency dependent on the input voltage.
-
-	A \textbf{phase detector} can produce a signal whose strength depends on how fast or slow the VCO is running compared to the reference.
-
-	If the VCO runs at a multiple of the reference frequency and is kept in a \textbf{phase-locked loop} with the reference, we can achieve oscillation at some multiple of the reference frequency. This can be chained a number of times.
-
-	Heat, manufacturing differences, crystal aging, voltage fluctuations, etc., can cause two clocks $T_1(t)$ and $T_2(t)$ to experience \textbf{clock drift}, whereby $\theta_{1\to 2} = T_2(t)-T_1(t)$ changes over time.
-
-	It is possible to observe negative apparent latency when naively comparing timestamps from poorly synced clocks.
+	\begin{itemize}
+		\item Quartz powered by a DC signal vibrates due to the piezoelectric effect at a reliable \textbf{reference frequency}. \\
+			\begin{center} \includegraphics[scale=0.04]{assets/clockwork.jpg} \includegraphics[scale=0.2]{assets/crystal.jpg} \end{center}
+		\item A \textbf{voltage-controlled oscillator} has a frequency dependent on the input voltage.
+		\item A \textbf{phase detector} can produce a signal whose strength depends on how fast or slow the VCO is running compared to the reference.
+		\item If the VCO runs at a multiple of the reference frequency and is kept in a \textbf{phase-locked loop} with the reference, we can achieve oscillation at some multiple of the reference frequency. This can be chained a number of times.
+	\end{itemize}
 \end{frame}
 
 \begin{frame}{Clock Drift}
-%graph for ES
-%Note that this is not trivial to distinguish from slow changes in service quality over time. But generally those are a bit more discrete
+	Heat, manufacturing differences, crystal aging, voltage fluctuations, etc., can cause two clocks $T_1(t)$ and $T_2(t)$ to experience \textbf{clock drift}, whereby $\theta_{1\to 2} = T_2(t)-T_1(t)$ changes over time.
+
+	It is possible to observe negative apparent latency when naively comparing timestamps from poorly synced clocks.
+	%graph for ES
+	%Note that this is not trivial to distinguish from slow changes in service quality over time. But generally those are a bit more discrete
 \end{frame}
 
 \begin{frame}{Synchronisation}
@@ -262,6 +374,8 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 
 	Supposedly, shortwave radio can be bounced off the ionosphere to traverse oceans faster than the speed of light in glass.
 	% https://spectrum.ieee.org/wall-street-tries-shortwave-radio-to-make-highfrequency-trades-across-the-atlantic
+
+	More recently, companies like SpaceX offer the ability to transmit at near-$c$ using inter-satellite links.
 \end{frame}
 
 \begin{frame}{Physical Media}
@@ -302,7 +416,8 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 \sectionquote{\includegraphics[scale=0.15]{assets/cat5.jpg} \\ ``This new form of communication could have some utility.'' Guglielmo Marconi \\ \includegraphics[scale=0.04]{assets/onion.jpg}}
 \section{Networking}
 \begin{frame}{Networking Stack}
-	\includegraphics[scale=0.6]{assets/stack.png}
+	\centering
+	\includegraphics[scale=0.6]{assets/osi.png}
 \end{frame}
 
 \begin{frame}{Hardware}
@@ -366,10 +481,12 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	Usually the timestamp is calculated according to the first bit of the Ethernet header (start-of-frame). The last bit timestamp can be inferred using the bandwidth of the transmission.
 \end{frame}
 
-\sectionquote{``We affirm that the world's magnificence has been enriched by a new beauty: \\the beauty of speed.'' Filippo Marinetti}
-\section{Execution}
+\begin{frame}{Abstract Colocation Topology}
+	\diagram{}
+\end{frame}
 
-\begin{frame}{Colocation Topology}
+\begin{frame}{Example Colocation Topology}
+	\centering
 	\includegraphics[scale=0.4]{assets/tse.png}
 	%exchange documentation is a starting point but cannot always be fully trusted
 
@@ -377,6 +494,15 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 
 	%https://en.wikipedia.org/wiki/Gateway_(telecommunications) - Gateways are servers. https://www.nasdaqtrader.com/Trader.aspx
 \end{frame}
+
+\part{Network Latency}
+\begin{frame}{Part II: Network Latency}
+	\tableofcontents[part=2]
+\end{frame}
+
+\sectiondiagram{execution}
+\sectionquote{``We affirm that the world's magnificence has been enriched by a new beauty: \\the beauty of speed.'' Filippo Marinetti}
+\section{Execution}
 
 \begin{frame}{Externalities}
 	\begin{block}{}
@@ -418,14 +544,33 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 		``The virtual channels on the X.25 for ordering were only 64kbps – very slow. I figured we could hack those similarly \ldots and start filling out an order before we had one. This would save us milliseconds. You could turn the packet into something benign or invalid if you didn’t have an order.''
 	%Pre-sending, out-of-order sending, subsequent invalidation, etc.; concrete example
 	\end{block}
-	%Fragments will only be held for so long before being dropped
 
+	\begin{itemize}
+		\item TCP/UDP protocol data units can be split across multiple Ethernet frames
+		\item The recipient will hold these fragments for some time waiting for the rest of the PDU
+		\item Ethernet preamble/FCS/IPG adds overhead
+		\item Layer 4+ components like gateways will need to collect all the fragments before transmission continues
+		\item Exchanges typically monitor packet corruption rates for signs of abuse
+	\end{itemize}
 	%switch types: cut-through, store-and-forward, buffering. How much latency is added by cut-through vs SAF, plus in case of many-to-one how much latency is added
 	%ring-buffer design, multiple queues
-	%favours small frames/packets, but then need more ethernet frame metadata including preamble. work through the maths
+	%favours small frames/packets, but then need more ethernet frame metadata including preamble. work through the maths. also: bandwidth != latency, relationship between latency and throughput, sharing bandwidth does not necessarily lead to latency
 \end{frame}
 
-\begin{frame}{Queueing Models}
+\begin{frame}{Out-of-Order Delivery}
+	Similarly, the use of sequence numbers in TCP makes it robust to out-of-order delivery of data:
+	\begin{block}{}
+		``We were already sending the first part of the message in an early packet.
+
+		Why not \textbf{send the later part of the packet} with the next TCP sequence number plus one \textbf{and then send the middle part of the sequence out of order} with the symbol, price and quantity?
+
+		That final part of the packet had quite a large user field so we would save an awesome amount of time and gain much more than we were with the speculative send we were already doing.''
+	\end{block}
+
+	TCP guarantees delivery of a bytestream, and presentation-layer message boundaries need not align with packet boundaries.%In practice they often do
+\end{frame}
+
+\begin{frame}{Win-rate Modeling}
 	%Probabilistic queueing models. https://en.wikipedia.org/wiki/Queueing_theory#External_links
 	%store-and-forward congestion, backpressure, etc. ("The hurrier I go, the behinder I get." alice in wonderland)
 
@@ -436,7 +581,8 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 
 	If every participant sends $n_i$ independent copies of their message, the probability of being fastest is proportional to $n_i \cdot \exp\left(\frac{\pi}{\sqrt{6}} \cdot \frac{-\mu_i}{\sigma}\right)$.
 
-	Of course, the latencies are very often not independent.
+	Of course, the latencies are usually not independent.
+	%Gateway choice is a game
 	\begin{center}
 		\begin{tikzpicture}[
 		    >=stealth,
@@ -474,11 +620,11 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 
 \begin{frame}{Lottery Game}
 	\begin{block}{}
-		An online lottery website is offering a \$1m jackpot.
-
-		Unfortunately, because they vibecoded the website, nobody is able to buy any tickets. Even worse, $n$ users have each been given one free ticket.
-
-		Each number $i$ has some probability $p_i$ of winning, in which case the jackpot will be split amongst all players who chose $i$. If nobody wins, the jackpot will not pay out.
+		\begin{itemize}
+			\item An online lottery website is offering a \$1m jackpot.
+			\item Unfortunately, because they vibecoded the website, nobody is able to buy any tickets. Even worse, $n$ users have each been given one free ticket.
+			\item Each number $i$ has some probability $p_i$ of winning, in which case the jackpot will be split equally amongst all players who chose $i$. If nobody wins, the jackpot will not pay out.
+		\end{itemize}
 
 		How should the players choose their numbers?
 	\end{block}
@@ -486,7 +632,6 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 \end{frame}
 
 \begin{frame}{Lottery Game Solution}
-
 	If a player chooses each number $i$ with probability $\pi_i$, and other players with probability $\pi_i'$, the player's expected payoff (in millions of dollars) is
 
 	\begin{align*}
@@ -499,6 +644,7 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	For a symmetric equilibrium, we require that $p_i \cdot \frac{1 - (1-\pi_i')^n}{n\pi_i'}$ is the same for all $i$. If $(1-\pi_i')^n$ is negligible this reduces to $\pi_i'\propto p_i$.
 \end{frame}
 
+\sectiondiagram{matching}
 \sectionquote{``The most amazing achievement of the computer software industry is its continuing cancellation of the steady and staggering gains made by the computer hardware industry.'' Henry Peteroski}
 \section{Matching Engine}
 
@@ -543,6 +689,7 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 
 \begin{frame}{Order Book Representation}
 %CLOB. Priority. How to efficiently maintain.
+%efficient matching engine https://arxiv.org/html/2606.01183v1
 \end{frame}
 %self-match prevention & cancellation disadvantage
 
@@ -555,6 +702,7 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 %Two EC2 instances (taker-only, market-maker) that compete for taking. MM risk limits naturally cause tradeable prices to move in the direction of dumb flow (eg based on stale base prices) regardless of fair value.
 %Subscriber with dashboard for order book + btc price, P&L (taker-only vs maker) etc. plus tuning knobs for the players and the matching engine
 
+\sectiondiagram{market}
 \sectionquote{``The race is not to the swift, nor the battle to the strong \ldots but time and chance happeneth to them all.'' Ecclesiastes \\ ``The race is not always to the swift, nor the battle to the strong – but that’s the way to bet.'' Anon.}
 \section{Market Data}
 \begin{frame}{Market Data Types}
@@ -659,33 +807,45 @@ struct BO5 { // Firm Order Book VIB
 % https://medium.databento.com/analyzing-private-fills-and-canary-orders-with-databentos-high-precision-market-data-timestamps-8cb12f82a1a3
 
 \begin{frame}{Publication Latency}
-	During a burst of activity, the ME may need to do post-processing of data prior to sending.
-
-	More complex transactions may take longer to be processed by the matching engine, or to traverse through the network.
-
-	Larger messages may be \textbf{packetised} and packets may be \textbf{fragmented} (according to the L2/L3 Maximum Transmission Unit).
-	%Can correlate with things we don't see
+	\begin{itemize}{}
+		\item During a burst of activity, the ME may need to do post-processing of data prior to sending.
+		\item More complex transactions may take longer to be processed by the matching engine, or to traverse through the network.
+		\item Larger messages may be \textbf{packetised} (L4) and packets may be \textbf{fragmented} (L2/L3)
+		%Can correlate with things we don't see
+	\end{itemize}
 \end{frame}
 
 \begin{frame}{Public Market Data}
 	This is ideally \textbf{multicast} (or broadcast) to participants depending what kinds of feeds and products they choose to subscribe to.
 
-	For fairness and latency reasons, public market data is ideally emitted only once by the matching engine NIC, then sent to a multicast switch that transmits to all relevant recipients simultaneously. Once received, packets can be further filtered or triaged by participants.
-
-	\begin{block}{Public Market Data}
-		``At one later site in the new KRX Annexe, we put in market data and it was the worst. \ldots We asked for this market data to be removed. A month or two later we paid for it to be reinstalled \ldots and now it was one of the best. Such were the vagaries of life in Korea. I suspect some new kind of semi-permanent \textbf{round robin} positioning somewhere fixed things. There was little rhyme nor reason for many things.''
+	\begin{block}{}
+		``At one later site \ldots we put in market data and it was the worst. \ldots We asked for this market data to be removed. A month or two later we paid for it to be reinstalled \ldots and now it was one of the best. \ldots I suspect some new kind of semi-permanent \textbf{round robin} positioning somewhere fixed things. There was little rhyme nor reason for many things.''
 	\end{block}
+
+	%For fairness and latency reasons, public market data is ideally emitted only once by the matching engine NIC, then sent to a multicast switch that transmits to all relevant recipients simultaneously. Once received, packets can be further filtered or triaged by participants.
+
+	%Nagle's algorithm, TCP_NODELAY https://brooker.co.za/blog/2024/05/09/nagle.html
 
 \end{frame}
 
 \begin{frame}{Private Feed}
-	This is typically \textbf{unicast}, and the matching engine may need to decide on some reasonable order in which to send updates to participants.
+	\begin{itemize}
+		\item This is typically \textbf{unicast}, and the matching engine may need to decide on some reasonable order in which to send updates to participants.
+		\item Depending on how this is achieved, there might be ways to gain priority in the distribution of private feed messages.
+		\item Because only certain events emit private feed information, different styles of trading will be more or less likely to result in a private update about latency-sensitive events.
+	\end{itemize}
 
-	Depending on how this is achieved, there might be ways to gain priority in the distribution of private feed messages.
-
-	Because only certain events emit private feed information, different styles of trading will be more or less likely to result in a private update about latency-sensitive events.
+	\begin{block}{}
+		``Participants might line a price level with small, 1-lot, passive buy orders that they fully expect to take losses on so that even larger profits can be obtained by aggressively selling based on the early fill information gleaned - these detector orders are sometimes referred to as sacrificial `\textbf{canary orders}'.'' John Huth, \textit{A Clear Market Fairness Issue Requires a Clear, Collective Response}.
+	\end{block}
 \end{frame}
 
+\part{System Latency}
+\begin{frame}{Part III: System Latency}
+	\tableofcontents[part=3]
+\end{frame}
+
+\sectiondiagram{network}
 \sectionquote{``In the fields of observation chance favours only the prepared mind.'' Louis Pasteur}
 \section{Wire-to-wire}
 \begin{frame}{Network Interface Cards}
@@ -758,77 +918,138 @@ struct BO5 { // Firm Order Book VIB
 
 %The cases when wire-to-wire matters (low jitter) are cases where marginal gains (but not necessarily step changes) are going to be not that useful. Can draw curves of opportunity vs latency.
 
+\sectiondiagram{hardware}
 \sectionquote{``All great events hang by a hair.'' Napoleon}
 \section{Hardware Design}
 
 \begin{frame}{Field Programmable Gate Arrays}
+	%Xilinx introduced the first FPGA in 1985. Xilinx was acquired by AMD in 2022.
 	\begin{center}
 		\includegraphics[scale=0.3]{assets/fpga.png}
 	\end{center}
 	While primarily useful onboard a NIC, FPGAs also have applications in other low-latency/high-throughput situations.
 \end{frame}
 
-\begin{frame}{Asynchronous Design}
-%timing. restricted by line bandwidth in some ways
+\begin{frame}{Controllable Logic Blocks}
+	\begin{center}
+		\includegraphics[scale=0.35]{assets/clb.png}
+	\end{center}
+
+	Different FPGAs will have different resources available in the CLB.
+
+	For instance, the \href{https://docs.amd.com/r/en-US/Alveo-X3522PV-Adaptable-Accelerator-Card-User-Guide-UG1607/}{AMD Alveo X3522 NIC} uses \href{https://docs.amd.com/r/en-US/ug574-ultrascale-clb/CLB-Resources}{UG574 UltraScale+ CLBs}.
 \end{frame}
 
-\begin{frame}{Synchronous Design}
-%clocks, clock edges, overclocking. 
+\begin{frame}[fragile]{Synchronous Design}
+	Synchronous design involves updating \textbf{registers} according to \textbf{combinational functions} on each \textbf{clock edge}.
+
+	\newsavebox\lstA
+	\begin{lrbox}{\lstA}
+\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+module itch_volume #(
+    parameter int NUM_STOCKS = 4
+) (
+    input logic clk, input logic valid,
+    input logic [5:0] pos, input logic [7:0] data_byte,
+
+    input logic [31:0] buy_threshold  [NUM_STOCKS],
+    input logic [31:0] sell_threshold [NUM_STOCKS],
+
+    output logic [31:0] buy_volume  [NUM_STOCKS],
+    output logic [31:0] sell_volume [NUM_STOCKS],
+
+    output logic buy_trigger,
+    output logic sell_trigger,
+    output logic [15:0] trigger_locate
+);
+\end{lstlisting}
+	\end{lrbox}
+	\href{https://edaplayground.com/x/9qhM}{\usebox{\lstA}}%Packet slicing, only read part of packet. Concept of a HDL
+
+	The length of each \textbf{clock cycle} must be chosen so that data has time to propagate to the destination register. %Reduce complexity of each step
+
+	\textbf{Clock domain crossings} must be separated by a specialised interface to avoid data corruption. %restricted by line bandwidth in some ways
 \end{frame}
 
-\begin{frame}{Parallelism and Pipelining}
-%misd. "pipelining is bad" = dont do stuff in serial
-%how much speedup from parallelisation
-%Packet slicing, only read part of packet
+\begin{frame}{Parallelism}
+	\begin{itemize}
+		\item A single clock cycle permits simultaneous dataflow through multiple CLBs at once.
+		\item Module will be equal to the number of clock cycles to produce an output, divided by the clock frequency
+	\end{itemize}
+
+	One extreme example of parallelism afforded by special-purpose circuitry is a \href{https://docs.google.com/spreadsheets/d/1ndaz7_nyNNiciWW2bAGFsjldRJw72Wh_dNt0qzXUdKs/}{\textbf{systolic array}}.
 \end{frame}
 
-\begin{frame}{Memory}
-%memory: flipflops, bram, ultraram, registers, external dram, memory bandwidth, read/write ports count, pipeline depth
-\end{frame}
-
-\begin{frame}{Hardware Description Language}
-%pins
-\end{frame}
-
-\begin{frame}{Synthesis}
-%cost model
-%optimisation methods like simulated annealing or whatever's actually more common
-%area becomes a problem when you run out of LUTs or need to slow down timing
-	%One concrete example of an FPGA is the \href{https://docs.amd.com/r/en-US/Alveo-X3522PV-Adaptable-Accelerator-Card-User-Guide-UG1607/}{X3522PV Accelerator Card}.
-	%can see how much of each resource is available
-\end{frame}
-
-%Hardware is expensive to buy, expensive to program, expensive to maintain. 
-
-\begin{frame}{Interconnects}
-%interconnects
-	%picture of PCIe cable
-
-	%This involves an \textbf{interrupt request} to be handled by the OS kernel.
-		%The PCIe standard defines a physical databus architecture and a packetisation format, including a special `\textbf{interrupt request}' message that asks the OS kernel to poll the data from the NIC buffer. Data will then be serially transmitted along a PCIe connection to the CPU, and serially written to RAM if register capacity is exceeded.
-\end{frame}
-
-\sectionquote{``You don't need to be an engineer to be a racing driver, but you do need Mechanical Sympathy.'' Jackie Stewart}
-\section{Software Design}
-\begin{frame}{Von Neumann Architecture}
+\begin{frame}{Memory Blocks}
+%memory: flipflops, LUTs, bram/dram/sram, ultraram, registers, external dram; memory bandwidth, read/write ports count, pipeline depth
 \end{frame}
 
 \begin{frame}{Memory}
 	%memory controller
 	%ddio
 %RAM. What are the physical interfaces a RAM card offers
+%clock skew -> smaller is faster
 \end{frame}
 
-\end{frame}{Caching}
-%Swap memory as extreme case
-%https://www.akkadia.org/drepper/cpumemory.pdf
-%translation lookaside buffer; Cache invalidation, latency of different cache levels. LFU/LRU algorithm. Cache locality. https://www.youtube.com/watch?v=g_X5g3xw43Q
-%"There are 2 hard problems in computer science: cache invalidation, naming things, and off-by-1 errors"
-%Huge Pages https://www.hudsonrivertrading.com/hrtbeat/low-latency-optimization-part-1/
+\begin{frame}{Synthesis}
+	Following design and verification, programming the board involves the following stages:
+	\begin{enumerate}
+		\item Parsing of the \textbf{hardware description} (e.g. VHDL, Verilog, Clash, Hardcaml) into an abstract representation at the \textbf{logic-gate level}%minimal area is nice
+		\item Identifying the dependency DAG of register values over time (\textbf{register-transfer level})
+		\item Translation into resources made available by the board, and optimising the placement of logic/routing for timing, power, etc. %also crosstalk
+		\item Generating a \textbf{gate-level netlist} to be serialised and `flashed' onto the board
+	\end{enumerate}
+	Optimisation generally makes use of some \textbf{cost model}. Depending on the software used, it may be non-deterministic.%intel quartus uses simulated annealing but vivado is in theory deterministic
+
+	%question. is it common to run out of resources
+\end{frame}
+
+\begin{frame}{High-Level Synthesis}
+%https://en.wikipedia.org/wiki/High-level_synthesis
+\end{frame}
+
+%Hardware is expensive to buy, expensive to program, expensive to maintain. 
+
+\begin{frame}{Interconnects and PCIe (Peripheral Component Interconnect Express)}
+	\textbf{PCIe} is the most common way for specialised components (NIC, CPU, RAM, GPU, etc.) in a computer to communicate.%also provides power
+
+	\begin{center}
+		\includegraphics[scale=0.15]{assets/pcie.jpg}
+	\end{center}
+
+	\begin{itemize}
+		\item OS/BIOS find components at startup and give them a \texttt{Bus:Device.Function} (BDF) address
+		\item A clock signal is distributed from a central source for syncing
+		\item Information is packetised, with the BDF address used for switching
+		\item Packets carry \href{https://docs.amd.com/r/en-US/pg194-axi-bridge-pcie-gen3/PCIe-Transaction-Type}{transactions}, which can be reads, writes, interrupts etc.
+	\end{itemize}
+\end{frame}
+
+\sectiondiagram{software}
+\sectionquote{``You don't need to be an engineer to be a racing driver, but you do need Mechanical Sympathy.'' Jackie Stewart}
+\section{Software Design}
+\begin{frame}{Von Neumann Architecture}
+	\begin{block}{}
+		``In analyzing the functioning of the contemplated device, certain classificatory distinctions suggest themselves immediately. \ldots
+
+		\begin{itemize}
+			\item A \textbf{central arithmetical part} of the device will probably have to exist, and this constitutes the first specific part \ldots
+
+			\item Second: The logical control of the device, that is the proper sequencing of its operations can be most efficiently carried out by a \textbf{central control organ} \ldots
+
+			\item Third: Any device which is to carry out long and complicated sequences of operations (specifically of calculations) must have a considerable \textbf{memory}.''
+		\end{itemize}
+
+		John Von Neumann, 1945
+	\end{block}
 \end{frame}
 
 \begin{frame}{CPUs}
+
+
 %fetch decode execute
+%instruction pipelining, superscalar, `perf`
+	%latency hiding https://news.ycombinator.com/item?id=26444397
 %Overclocking https://www.blackcoretech.com/
 \end{frame}
 
@@ -839,6 +1060,15 @@ struct BO5 { // Firm Order Book VIB
 %virtual registers
 %google this, "cpu: prf rat rob rs bob mob"
 %https://www.intel.com/content/www/us/en/docs/vtune-profiler/cookbook/2024-1/top-down-microarchitecture-analysis-method.html
+\end{frame}
+
+\begin{frame}{Caching}
+%NUMA
+%Swap memory as extreme case
+%https://www.akkadia.org/drepper/cpumemory.pdf
+%translation lookaside buffer; Cache invalidation, latency of different cache levels. LFU/LRU algorithm. Cache locality. https://www.youtube.com/watch?v=g_X5g3xw43Q
+%"There are 2 hard problems in computer science: cache invalidation, naming things, and off-by-1 errors"
+%Huge Pages https://www.hudsonrivertrading.com/hrtbeat/low-latency-optimization-part-1/
 \end{frame}
 
 \begin{frame}{Branch Prediction}
@@ -857,6 +1087,8 @@ struct BO5 { // Firm Order Book VIB
 %userspace timing
 %simd
 %https://github.com/david-grs/papipp
+%cachegrind for counting cpu cycles https://stackoverflow.com/a/2588705
+%flame graph
 \end{frame}
 
 \begin{frame}{Multitasking}
@@ -876,10 +1108,19 @@ struct BO5 { // Firm Order Book VIB
 %TCPDirect, Onload, DPDK (+F-Stack or mTCP), VMA (vhost/Mellanox Messaging Accelerator), OpenOnload, RDMA/RoCE
 \end{frame}
 
-%## Software Autotrading
+\begin{frame}{Algorithm Design}
 %Time complexity picture. EMAs, exp weighted microprice (pose as a puzzle, whats best microprice update time complexity you can get with certain properties), etc.
-%memory allocation
-%garbage collection
+\end{frame}
+
+\begin{frame}{Memory Allocation}
+	\centering
+	\includegraphics[scale=0.2]{assets/stack.png}
+%static, automatic (stack), dynamic (heap)
+%stack. fibonacci example. stack is still in RAM
+%heap, garbage collection
+%allocation in hotpath is expensive
+% custom allocator https://www.youtube.com/watch?v=RpD-0oqGEzE
+\end{frame}
 
 % https://x.com/BrettHarrison/status/2084642796888015328?s=20
 %structs, parsing
@@ -890,6 +1131,7 @@ struct BO5 { // Firm Order Book VIB
 %
 %https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/6/html/performance_tuning_guide/main-network#s-network-future
 
+\sectiondiagram{program}
 \sectionquote{``There is no science apart from the general. \\ It may even be said that the very object of the exact sciences is to spare us these direct verifications.'' Henri Poincaré}
 \section{Programming}
 %### C++
@@ -953,9 +1195,6 @@ struct BO5 { // Firm Order Book VIB
 
 %throughout, give some idea of the order of magnitude of latency we are dealing with
 
-%
-%
-%
 %"Eternity is in love with the productions of time." William Blake
 %"Truth was the only daughter of Time." Leonardo da Vinci
 %"Time drives everything before it, and is able to bring with it good as well as evil, and evil as well as good." Niccolò Machiavelli,
@@ -981,6 +1220,9 @@ struct BO5 { // Firm Order Book VIB
 %https://databento.com/blog/introduction-matching-engines
 %https://api2.sgx.com/sites/default/files/2026-06/OMnet_MessRef_SGX_va42.pdf
 %https://www.eecis.udel.edu/~mills/database/papers/history.pdf
+%https://www.realclearmarkets.com/articles/2018/02/14/a_clear_market_fairness_issue_requires_a_clear_collective_response_103150.html
+%https://www.synopsys.com/glossary/what-is-synthesis.html
+%https://web.archive.org/web/20070623082626/http://qss.stanford.edu/%7Egodfrey/vonNeumann/vnedvac.pdf
 
 %Relativity: https://en.wikipedia.org/wiki/One-way_speed_of_light#Einstein_convention
 

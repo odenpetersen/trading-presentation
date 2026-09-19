@@ -1,0 +1,105 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>latency demo</title>
+<style>
+body{background:#0d1117;color:#c9d1d9;font-family:monospace;margin:0;padding:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+h2{font-size:13px;color:#8b949e;margin:0 0 6px}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px}
+table{width:100%;font-size:12px;border-collapse:collapse}
+td{padding:2px 6px}
+.bid{color:#3fb950}.ask{color:#f85149}
+#chart{width:100%;height:200px;background:#0d1117}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
+button,select,input{background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:3px 8px}
+.note{font-size:11px;color:#8b949e}
+</style></head>
+<body>
+<div class="panel"><h2>order book</h2><table id="book"></table></div>
+<div class="panel" style="grid-column:span 2"><h2>demo mid vs binance BTC/USDT</h2><canvas id="chart"></canvas></div>
+<div class="panel"><h2>trades</h2><div style="max-height:280px;overflow-y:auto"><table id="trades"></table></div></div>
+<div class="panel"><h2>controls</h2>
+<div class="row">self-match prevention
+<button onclick="send({action:'smp',value:1})">on</button>
+<button onclick="send({action:'smp',value:0})">washing</button>
+<button onclick="send({action:'smp',value:2})">cancel first</button>
+</div>
+<div class="row note">on = ME rejects/stops before crossing a participant's own resting order. washing = ME allows it (wash trade). cancel first = ME allows it, but each strategy cancels its own resting order before crossing it, so no self-match happens</div>
+<div class="row">gateway selection: participant <input id="gwpid" type="number" value=100 style="width:60px"> <select onchange="send({action:'gwmode',participant:+gwpid.value,value:+this.value})"><option value=0>naive 50/50</option><option value=1>dynamic</option><option value=2>multi-shoot</option></select></div>
+<div class="row">auth cache ttl (ms) <input type="number" value=1000 onchange="send({action:'ttl',value:+this.value})"></div>
+<div class="row note">how long (ms) a gateway trusts its last authorisation check for a participant before it must re-poll the ME - shorten to demo the re-poll delay, lengthen to hide it</div>
+<div class="row">quote refresh (ms) <input type="number" value=500 onchange="send({action:'quote_refresh',value:+this.value})"></div>
+<div class="row">participant <input id="pid" type="number" value=100 style="width:60px"> <button onclick="send({action:'auth',participant:+pid.value,value:0})">revoke</button><button onclick="send({action:'auth',participant:+pid.value,value:1})">restore</button></div>
+<div class="row note">revoke marks a participant unauthorised at the ME - their next order sits at the gateway until it re-polls (see auth cache ttl), then gets rejected. restore undoes it</div>
+</div>
+<div class="panel" style="grid-column:span 2"><h2>per-participant fills / cash flow / win rates (taker vs maker)</h2><table id="stats"></table><div class="note">markout win rate = did the fill price look good in hindsight (vs Binance a moment later). latency race win rate = only populated in multi-shoot mode: % of races where gateway A vs B actually got this participant's order to the ME first</div></div>
+<div class="panel"><h2>batch size vs first-fill publish delay</h2><canvas id="batchChart"></canvas></div>
+</body>
+<script>
+let ws = new WebSocket('ws://' + location.host + '/ws')
+let series = [], batches = []
+ws.onmessage = e => {
+	let d = JSON.parse(e.data)
+	if (d.kind == 'book') renderBook(d)
+	else if (d.kind == 'trade') addTrade(d)
+	else if (d.kind == 'ref_price') { series.push({t: d.t, ref: d.price}); if (series.length > 300) series.shift(); drawChart() }
+	else if (d.kind == 'stats') renderStats(d.stats)
+	else if (d.kind == 'batch') { batches.push(d); if (batches.length > 300) batches.shift(); drawBatchChart() }
+}
+function send(cmd) { ws.send(JSON.stringify(cmd)) }
+function renderBook(d) {
+	let rows = []
+	for (let i = 0; i < Math.max(d.bids.length, d.asks.length); i++) {
+		let b = d.bids[i], a = d.asks[i]
+		rows.push(`<tr><td class=bid>${b ? b[0]+' x '+b[1] : ''}</td><td class=ask>${a ? a[0]+' x '+a[1] : ''}</td></tr>`)
+	}
+	book.innerHTML = rows.join('')
+	if (d.bids[0] && d.asks[0]) { series.push({t: Date.now()/1000, mid: (d.bids[0][0]+d.asks[0][0])/2}); if (series.length > 300) series.shift(); drawChart() }
+}
+function renderStats(s) {
+	let head = '<tr><td>participant</td><td>taker fills</td><td>taker qty</td><td>maker fills</td><td>maker qty</td><td>cash</td><td>markout win rate</td><td>latency race win rate (A/B)</td></tr>'
+	let rows = Object.entries(s).map(([id, v]) => {
+		let n = v.wins + v.losses
+		let wr = n ? (v.wins / n * 100).toFixed(0) + '% (' + n + ')' : '-'
+		let races = v.gw_a_wins + v.gw_b_wins
+		let rr = races ? `A ${(v.gw_a_wins/races*100).toFixed(0)}% / B ${(v.gw_b_wins/races*100).toFixed(0)}% (${races})` : '-'
+		return `<tr><td>${id}</td><td>${v.taker_fills}</td><td>${v.taker_qty}</td><td>${v.maker_fills}</td><td>${v.maker_qty}</td><td>${v.cash.toFixed(1)}</td><td>${wr}</td><td>${rr}</td></tr>`
+	})
+	stats.innerHTML = head + rows.join('')
+}
+function addTrade(d) {
+	let row = `<tr><td class="${d.side==0?'bid':'ask'}">${d.side==0?'buy':'sell'}</td><td>${d.price}</td><td>${d.qty}</td></tr>`
+	trades.innerHTML = row + trades.innerHTML
+}
+function drawChart() {
+	let c = document.getElementById('chart'), ctx = c.getContext('2d')
+	c.width = c.clientWidth; c.height = c.clientHeight
+	let mids = series.filter(s => s.mid).map(s => s.mid), refs = series.filter(s => s.ref).map(s => s.ref)
+	if (mids.length < 2 && refs.length < 2) return
+	// plot % change from each series' own first value - the demo book (~100)
+	// and real BTC (~77000) are on totally different scales, so plotting raw
+	// prices makes one line look flat; % change puts both on a shared axis
+	let pct = vals => { let base = vals[0]; return vals.map(v => (v - base) / base * 100) }
+	let pmids = pct(mids), prefs = pct(refs)
+	let all = pmids.concat(prefs), lo = Math.min(...all, 0), hi = Math.max(...all, 0)
+	let plot = (vals, color) => {
+		ctx.strokeStyle = color; ctx.beginPath()
+		vals.forEach((v, i) => { let x = i/(vals.length-1||1)*c.width, y = c.height - (v-lo)/(hi-lo||1)*c.height; i?ctx.lineTo(x,y):ctx.moveTo(x,y) })
+		ctx.stroke()
+	}
+	plot(pmids, '#58a6ff'); plot(prefs, '#f0883e')
+	ctx.fillStyle = '#58a6ff'; ctx.fillText('demo mid', 4, 12)
+	ctx.fillStyle = '#f0883e'; ctx.fillText('binance', 4, 24)
+}
+function drawBatchChart() {
+	let c = document.getElementById('batchChart'), ctx = c.getContext('2d')
+	c.width = c.clientWidth; c.height = c.clientHeight
+	ctx.clearRect(0, 0, c.width, c.height)
+	if (!batches.length) return
+	let nMax = Math.max(...batches.map(b => b.n)), gMax = Math.max(...batches.map(b => b.gap_ns))
+	ctx.fillStyle = '#58a6ff'
+	batches.forEach(b => {
+		let x = b.n / (nMax || 1) * (c.width - 10) + 5, y = c.height - b.gap_ns / (gMax || 1) * (c.height - 10) - 5
+		ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fill()
+	})
+}
+</script>
+</html>

@@ -4,3 +4,5 @@
 **/*.out
 **/*.snm
 **/*.toc
+src/latency/pcaps
+.env

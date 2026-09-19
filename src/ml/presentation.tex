@@ -1,0 +1,110 @@
+\documentclass{beamer}
+
+% Theme choice (you can change to Madrid, CambridgeUS, etc.)
+\usetheme{Madrid}
+
+% Optional packages
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx} % for including images
+\usepackage{amsmath, amssymb, mathtools} % for math symbols
+\usepackage{hyperref} % for clickable links
+\usepackage{tikz}
+
+% Title info
+\title[\texttt{/trading-presentation}]{Machine Learning in Trading}
+\author[\texttt{github.com/odenpetersen}]{Oden Petersen}
+\date{2025-10-31}
+
+% Section headers
+\newcommand{\sectionquote}[1]{\def\insertsquote{#1}}
+\newcommand{\insertsquote}{}
+
+\AtBeginSection[]{
+	\begin{frame}
+	\vfill
+	\centering
+	\begin{beamercolorbox}[sep=8pt,center,shadow=True,rounded=True]{title}
+		\usebeamerfont{title}\insertsectionhead\par%
+	\end{beamercolorbox}
+	\vspace{1cm}
+	{\Large\textit{\insertsquote}}\par
+	\vfill
+	\end{frame}
+
+	\renewcommand{\insertsquote}{}
+}
+
+\begin{document}
+
+% Title page
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\begin{frame}{About Me}
+\end{frame}
+
+\begin{frame}{Point of This Talk}
+	\begin{itemize}
+	\end{itemize}
+\end{frame}
+
+% Table of contents
+\begin{frame}{Outline}
+	\tableofcontents
+\end{frame}
+
+\sectionquote{}
+\section{Data Capture}
+%Storage. PCAPs, CSV, parquet, json, proprietary formats. Downsampling, streaming compression. Log rotation. Databases.
+
+\section{Data Processing}
+%Normalisation, data processing. Lazy computation (& cost downsides), polars, predicate pushdown, projection pushdown
+%Distributed processing. Mapreduce/spark, dask
+
+\section{Predictive Modeling}
+%Prediction, functional forms
+%Estimation theory
+%Empirical risk minimisation
+%Backtesting (is fake)
+
+\section{Linear Models}
+%Linear regression theory
+%Multi target
+
+\section{Optimisation}
+%Optimisation/training
+
+%Boosting bagging trees etc
+%https://adrian-valente.github.io/2022/06/01/low-rank-summary.html
+
+\section{Deep Learning}
+%Why resnet
+%Deep learning, Transformers = cnns
+%CNNs are solving subproblems, similar to DP - so do they have an RL formulation
+%Recurrence and vanishing gradient
+
+\section{Overfitting}
+%Overfitting, hypothesis testing
+%Regularisation, LOOCV (bootstrapping?) GCV, double descent, (regularisation for non-iid?). Regularisation is kind of dumb, right, why would small l2 norm be best
+
+\section{Reinforcement Learning}
+%RL. Cloning, play
+
+\section{Transfer Learning}
+%Transfer learning
+
+%High throughput & low latency inference. Classification for interrupts & reduced data volume
+%GPU sharding
+
+\section{Bibliography}
+\begin{frame}{Useful}
+	\begin{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Classics \& Mentioned}
+	\begin{itemize}
+	\end{itemize}
+\end{frame}
+\end{document}
