@@ -1,0 +1,29 @@
+\frametitle{Synchronous Design}
+Synchronous design involves updating \textbf{registers} according to \textbf{combinational functions} on each \textbf{clock edge}.
+
+	\newsavebox\lstA
+	\begin{lrbox}{\lstA}
+\begin{lstlisting}[ basicstyle=\ttfamily\bfseries\scriptsize ]
+module itch_volume #(
+    parameter int NUM_STOCKS = 4
+) (
+    input logic clk, input logic valid,
+    input logic [5:0] pos, input logic [7:0] data_byte,
+
+    input logic [31:0] buy_threshold  [NUM_STOCKS],
+    input logic [31:0] sell_threshold [NUM_STOCKS],
+
+    output logic [31:0] buy_volume  [NUM_STOCKS],
+    output logic [31:0] sell_volume [NUM_STOCKS],
+
+    output logic buy_trigger,
+    output logic sell_trigger,
+    output logic [15:0] trigger_locate
+);
+\end{lstlisting}
+	\end{lrbox}
+	\href{https://edaplayground.com/x/9qhM}{\usebox{\lstA}}%Packet slicing, only read part of packet. Concept of a HDL
+
+	The length of each \textbf{clock cycle} must be chosen so that data has time to propagate to the destination register. %Reduce complexity of each step
+
+	\textbf{Clock domain crossings} must be separated by a specialised interface to avoid data corruption. %restricted by line bandwidth in some ways
