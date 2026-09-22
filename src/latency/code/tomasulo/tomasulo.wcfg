@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="sim.wdb" id="1">
+         <top_modules>
+            <top_module name="tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+   </zoom_setting>
+   <column_width_setting>
+   </column_width_setting>
+   <WVObjectSize size="17" />
+   <wvobject fp_name="divider1" type="divider">
+      <obj_property name="label">Clock</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb/clk">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider3" type="divider">
+      <obj_property name="label">In-order</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/i_pc">
+      <obj_property name="ElementShortName">i_pc[3:0]</obj_property>
+      <obj_property name="ObjectShortName">i_pc[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb/stall">
+      <obj_property name="ElementShortName">stall</obj_property>
+      <obj_property name="ObjectShortName">stall</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/i_ret">
+      <obj_property name="ElementShortName">i_ret[7:0]</obj_property>
+      <obj_property name="ObjectShortName">i_ret[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/i_cycles">
+      <obj_property name="ElementShortName">i_cycles[7:0]</obj_property>
+      <obj_property name="ObjectShortName">i_cycles[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb/i_done">
+      <obj_property name="ElementShortName">i_done</obj_property>
+      <obj_property name="ObjectShortName">i_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider9" type="divider">
+      <obj_property name="label">Tomasulo</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/t_pc">
+      <obj_property name="ElementShortName">t_pc[3:0]</obj_property>
+      <obj_property name="ObjectShortName">t_pc[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/rs_busy">
+      <obj_property name="ElementShortName">rs_busy[3:0]</obj_property>
+      <obj_property name="ObjectShortName">rs_busy[3:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb/cdb_v">
+      <obj_property name="ElementShortName">cdb_v</obj_property>
+      <obj_property name="ObjectShortName">cdb_v</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/cdb_tag">
+      <obj_property name="ElementShortName">cdb_tag[2:0]</obj_property>
+      <obj_property name="ObjectShortName">cdb_tag[2:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/cdb_val">
+      <obj_property name="ElementShortName">cdb_val[15:0]</obj_property>
+      <obj_property name="ObjectShortName">cdb_val[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/t_ret">
+      <obj_property name="ElementShortName">t_ret[7:0]</obj_property>
+      <obj_property name="ObjectShortName">t_ret[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/tb/t_cycles">
+      <obj_property name="ElementShortName">t_cycles[7:0]</obj_property>
+      <obj_property name="ObjectShortName">t_cycles[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/tb/t_done">
+      <obj_property name="ElementShortName">t_done</obj_property>
+      <obj_property name="ObjectShortName">t_done</obj_property>
+   </wvobject>
+</wave_config>

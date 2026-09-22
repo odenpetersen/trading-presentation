@@ -50,8 +50,16 @@ set_property IOSTANDARD DIFF_SSTL12 [get_ports clk200_p]
 set_property IOSTANDARD DIFF_SSTL12 [get_ports clk200_n]
 create_clock -period 5.000 -name clk200 [get_ports clk200_p]
 
-# Both flagged by place_design as "sub-optimal clock-capable IO / BUFG
-# pairing" in the earlier PCIe-based build -- same instance paths apply
-# here since eth_mac_wrapper is still instantiated as u_eth.
+# clk200 only calibrates IDELAYCTRL -- no tight timing requirement, so the
+# override is a reasonable simplification for it.
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets u_eth/u_clk200_ibuf/O]
+
+# rgmii_rxc (pin U21) was confirmed via direct query (report_property,
+# not guessed) to have NO clock-related properties at all -- it is not a
+# GCIO-capable pin on this package. That means the "same clock region"
+# placement rule can never be satisfied for this net no matter where the
+# BUFG is placed (tried, confirmed still fails even with a same-region
+# BUFG) -- this override is the only way this net can route at all, given
+# ALINX's fixed pin assignment for RGMII_RXC on this board. Not a
+# shortcut; a real constraint of the board.
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets u_eth/u_eth_mac/inst/rgmii_interface/rgmii_rxc_ibuf_i/O]

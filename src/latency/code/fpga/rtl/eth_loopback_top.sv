@@ -75,4 +75,14 @@ module eth_loopback_top (
         .probe_in3({rx_enable_status, rst_rx})
     );
 
+    // Direct evidence: does the MAC's own RX AXI4-Stream ever show any
+    // activity at all when traffic arrives? Settles whether the problem
+    // is upstream (electrical/PHY) or in our own RTL, independent of the
+    // frame-boundary logic in eth_test_counter.sv.
+    ila_0 u_ila (
+        .clk(clk_rx),
+        .probe0(rst_rx), .probe1(rx_tvalid), .probe2(rx_tlast),
+        .probe3(rx_tuser), .probe4(rx_tdata)
+    );
+
 endmodule
