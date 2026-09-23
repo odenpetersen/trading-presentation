@@ -189,16 +189,18 @@
 \sectionquote{``All economic activity is carried out through time. Every individual economic process occupies a certain time, and all linkages between economic processes necessarily involve longer or shorter periods of time.'' Friedrich Hayek}
 \section{Trading}
 \begin{frame}{Electronic Trading}
-	\begin{itemize}
-		\item Electronic trading involves interacting with a \textbf{matching engine}.
-		\item A \textbf{limit order} represents an intention to trade some \textbf{quantity} in some \textbf{direction} at some \textbf{limit price} or better
-		\item We can send three kinds of messages to the matching engine:
+	Electronic trading involves interacting with a \textbf{matching engine}.
+	\begin{block}{Limit Order Book}
 		\begin{itemize}
-			\item \textbf{Insert} an order with some \textbf{lifetime} (e.g. GTC, GFD, FAK, FOK)
-			\item \textbf{Cancel} or \textbf{modify} existing order(s)
+			\item A \textbf{limit order} represents an intention to trade some \textbf{quantity} in some \textbf{direction} at some \textbf{limit price} or better
+			\item We can send three kinds of messages to the matching engine:
+			\begin{itemize}
+				\item \textbf{Insert} an order with some \textbf{lifetime} (e.g. GTC, GFD, FAK, FOK)
+				\item \textbf{Cancel} or \textbf{modify} existing order(s)
+			\end{itemize}
+			\item The matching engine maintains an \href{https://www.binance.com/en-AU/trade/BTC_USDT}{\textbf{order book}} and produces \textbf{matches} when two orders are willing to trade with each other
 		\end{itemize}
-		\item The matching engine maintains an \href{https://www.binance.com/en-AU/trade/BTC_USDT}{\textbf{order book}} and produces \textbf{matches} when two orders are willing to trade with each other
-	\end{itemize}
+	\end{block}
 	A market is a distributed computer for producing trades at mutually agreeable prices.
 \end{frame}
 
@@ -209,6 +211,7 @@
 			\item This often involves a \textbf{race condition}, with the risk of getting `\textbf{legged}'
 		\end{itemize}
 	\end{block}
+	\pause
 	\begin{block}{Risk}
 		\begin{itemize}
 			\item \textbf{Statistical Arbitrage}: Positions might not offset perfectly
@@ -228,10 +231,12 @@
 
 \begin{frame}{Low-Latency Trading}
 	\begin{itemize}
-		\item Access to \textbf{better liquidity} and understanding of how to make use of it represents a concrete, measurable edge.
-		\item Almost any profitable trading strategy can be improved by being faster.
+		\item Access to \textbf{better liquidity} and understanding of how to make use of it represents a concrete, measurable edge
+		\item Almost any profitable trading strategy can be improved by being faster
+		\pause
 		\item Latency helps the most with the \textbf{most competitive opportunities}
 		\item \textbf{Capacity constraints}: Very large trading businesses may become less latency-focused as risk budgets expand
+		\pause
 		\item Market structure understanding remains relevant for understanding order flow
 	\end{itemize}
 \end{frame}
@@ -285,8 +290,10 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 	\begin{itemize}
 		\item Quartz powered by a DC signal vibrates due to the piezoelectric effect at a reliable \textbf{reference frequency}. \\
 			\begin{center} \includegraphics[scale=0.04]{assets/clockwork.jpg} \includegraphics[scale=0.2]{assets/crystal.jpg} \end{center}
+		\pause
 		\item A \textbf{voltage-controlled oscillator} has a frequency dependent on the input voltage.
 		\item A \textbf{phase detector} can produce a signal whose strength depends on how fast or slow the VCO is running compared to the reference.
+		\pause
 		\item By keeping the VCO in a \textbf{phase-locked loop} with the reference, we can achieve oscillation at some multiple of the reference frequency. This can be chained a number of times.
 	\end{itemize}
 \end{frame}
@@ -323,6 +330,7 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 		\end{tikzpicture}
 	\end{center}
 
+	\pause
 	\begin{block}{Clock Drift Estimation}
 		Each piece of hardware can be equipped with its own clock $T_{*}(t)$.
 
@@ -336,6 +344,7 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 	Using the \textbf{network time protocol} involves the client making requests to the time server that are labeled with four receive/transmit timestamps $T_c(t_1), T_m(t_2), T_m(t_3), T_c(t_4)$.
 
 	Suppose we have symmetric latency $T_m(t_2)-T_m(t_1) = T_m(t_4)-T_m(t_3)$.
+	\pause
 	It follows that $T_m(t_2)-(T_c(t_1)+\theta_{c\to m}) = (T_c(t_4)+\theta_{c\to m})-T_m(t_3)$. Then
 	\begin{align*}
 		\theta_{c\to m} &= \frac{1}{2}\left(\underbrace{(T_m(t_2)-T_c(t_1))}_\text{Transmit} - \underbrace{(T_c(t_4)-T_m(t_3))}_\text{Receive}\right) \\
@@ -350,12 +359,14 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 
 	Suppose we have $T_c(t_1), T_s(t_2), T_s(t_3), T_m(t_4), T_m(t_5), T_s(t_6), T_s(t_7), T_c(t_8)$.
 
+	\pause
 	Then we have
 	$$\theta_{c\to s} = \frac{1}{2}\left((T_s(t_2)-T_c(t_1)) - (T_c(t_8)-T_s(t_7))\right),$$
 	$$\theta_{s\to m} = \frac{1}{2}\left((T_m(t_4)-T_s(t_3)) - (T_s(t_6)-T_m(t_5))\right),$$
 	$$\theta_{c\to m} = \theta_{c\to s} + \theta_{s\to m}.$$
 
-	We can either record a cumulative adjustment in the timing packets (transparent clock), or sync the switch to the master clock and then the client to the switch (boundary clock).
+	\pause
+	We can either record a cumulative adjustment in the timing packets (\textbf{transparent clock}), or sync the switch to the master clock and then the client to the switch (\textbf{boundary clock}).
 \end{frame}
 
 \sectionquote{``Speed is the essence of war.'' Sun Tzu \\ ``Remote fountains are of little help to nearby fires.'' Han Fei}
@@ -582,13 +593,20 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	%Pre-sending, out-of-order sending, subsequent invalidation, etc.; concrete example
 	\end{block}
 
+	\pause
 	\begin{itemize}
 		\item TCP/UDP protocol data units can be split across multiple Ethernet frames
 		\item The recipient will hold these fragments for some time waiting for the rest of the PDU
-		\item Ethernet preamble/FCS/IPG adds overhead
-		\item Layer 4+ components like gateways will need to collect all the fragments before transmission continues
-		\item Exchanges typically monitor packet corruption rates for signs of abuse
 	\end{itemize}
+
+	\pause
+	\begin{block}{Considerations}
+		\begin{itemize}
+			\item Ethernet preamble/FCS/IPG adds overhead
+			\item Layer 4+ components like gateways will need to collect all the fragments before transmission continues
+			\item Exchanges typically monitor packet corruption rates for signs of abuse
+		\end{itemize}
+	\end{block}
 	%switch types: cut-through, store-and-forward, buffering. How much latency is added by cut-through vs SAF, plus in case of many-to-one how much latency is added
 	%ring-buffer design, multiple queues
 	%favours small frames/packets, but then need more ethernet frame metadata including preamble. work through the maths. also: bandwidth != latency. relationship between latency and throughput. sharing bandwidth does not necessarily lead to latency
@@ -598,7 +616,9 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	\begin{block}{}
 		An enhancement to the Market Segment Gateway (“MSGW”) will be introduced to further safeguard the \ldots electronic trading platform \ldots infrastructure by introducing a delay of at least three microseconds if the MSGW receives a partial order message as a means of ensuring the stability of the platform. Certain participants \textbf{intentionally submit partial order messages to reduce latency, and only complete the order message upon the happening of an event or trading signal.} Implementation of the enhancement is expected to reduce the frequency of intentionally split order messages as the additional processing time will serve as a deterrent. 
 	\end{block}
-	Exchanges often impose limits on throughput (`\textbf{transactions per second}'). Limits might be per-session, per-user, etc.
+	Exchanges often limit throughput (`\textbf{transactions per second}').
+
+	Limits might be per-session, per-user, etc.
 \end{frame}
 
 \begin{frame}{Out-of-Order Delivery}
@@ -1181,6 +1201,7 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 		\end{enumerate}
 	\end{block}
 
+	\pause
 	\begin{itemize}
 		\item Taking advantage of parallelism involves \textbf{dependency minimisation}. Modern compilers are quite good at this.
 
@@ -1203,6 +1224,7 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 		\item The ISA also exposes a fixed set of \href{https://en.wikibooks.org/wiki/X86_Assembly/X86_Architecture}{\textbf{logical registers}}.
 	\end{itemize}
 
+	\pause
 	\begin{block}{x86}
 		\begin{itemize}
 			\item ISA developed by Intel in 1978, largely backwards-compatible
@@ -1221,6 +1243,7 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 		\end{itemize}
 	\end{block}
 
+	\pause
 	\begin{block}{Stack Memory}
 		\begin{itemize}
 			\item A fixed amount of stack memory is allocated when the program starts
@@ -1339,11 +1362,13 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 		\item Modern processors come equipped with multiple \textbf{cores}
 		\item Each core may have multiple CPUs, visible with \texttt{lscpu -e=CPU,CORE}
 		\item Each CPU can execute instructions independently, e.g. for multithreaded code
+		\pause
 		\item Threads may be \textbf{pinned} to a core, or have an \textbf{affinity bitmask} (\texttt{taskset}, \texttt{cpuset}, \texttt{tuna})
 		\item \textbf{Interrupt Request} (IRQ) affinity (particularly NIC IRQs) and steering may assist performance
 		\item Configuration parameters like \texttt{isolcpus} and \texttt{nohz\_full} allow a core to avoid running certain tasks
 	\end{itemize}
 
+	\pause
 	\begin{block}{Interprocess Communication (IPC)}
 		Different processes often need to communicate information to one another.
 
