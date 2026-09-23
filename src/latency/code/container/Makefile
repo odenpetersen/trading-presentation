@@ -16,6 +16,6 @@ plot: container_latency.csv
 	python3 plot.py
 
 clean:
-	rm -f bench container_latency.csv container_latency.png
+	rm -f bench container_latency.csv container_latency.png tsc_ghz.txt
 
 .PHONY: all run plot clean

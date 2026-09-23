@@ -9,6 +9,7 @@
 #include <random>
 #include <x86intrin.h>
 #include <sched.h>
+#include <time.h>
 
 static std::vector<std::pair<void*,size_t>> g_log;
 static bool g_tracking = false;
@@ -28,11 +29,29 @@ struct TrackAlloc {
 	template <typename U> bool operator!=(const TrackAlloc<U>&) const noexcept { return false; }
 };
 
-static inline uint64_t timestamp(void) {
-	unsigned lo, hi, aux;
-	_mm_mfence();
-	asm volatile("rdtscp" : "=a"(lo), "=d"(hi), "=c"(aux) :: "memory");
+static inline uint64_t timestamp_start(void) {
+	unsigned lo, hi;
+	_mm_lfence();
+	asm volatile("rdtsc" : "=a"(lo), "=d"(hi) :: "memory");
 	return ((uint64_t)hi << 32) | lo;
+}
+
+static inline uint64_t timestamp_end(void) {
+	unsigned lo, hi, aux;
+	asm volatile("rdtscp" : "=a"(lo), "=d"(hi), "=c"(aux) :: "memory");
+	_mm_lfence();
+	return ((uint64_t)hi << 32) | lo;
+}
+
+static double calibrate_tsc_ghz(void) {
+	struct timespec t0, t1;
+	clock_gettime(CLOCK_MONOTONIC, &t0);
+	uint64_t c0 = timestamp_start();
+	do { clock_gettime(CLOCK_MONOTONIC, &t1); }
+	while ((t1.tv_sec - t0.tv_sec) * 1000000000L + (t1.tv_nsec - t0.tv_nsec) < 200000000L);
+	uint64_t c1 = timestamp_end();
+	double ns = (t1.tv_sec - t0.tv_sec) * 1e9 + (t1.tv_nsec - t0.tv_nsec);
+	return (double)(c1 - c0) / ns;
 }
 
 static void flush_log(void) {
@@ -64,9 +83,9 @@ void bench(const char* name, long n, std::mt19937_64& rng, Build build, Query qu
 	for (int trial = 0; trial < TRIALS; trial++) {
 		long target = targets[trial];
 		flush_log();
-		uint64_t t0 = timestamp();
+		uint64_t t0 = timestamp_start();
 		bool found = query(cont, target);
-		uint64_t t1 = timestamp();
+		uint64_t t1 = timestamp_end();
 		asm volatile("" :: "r"(found) : "memory");
 		fprintf(out, "%s,%ld,%lu\n", name, n, t1 - t0);
 	}
@@ -84,6 +103,12 @@ int main() {
 	CPU_ZERO(&cpuset);
 	CPU_SET(2, &cpuset);
 	sched_setaffinity(0, sizeof(cpuset), &cpuset);
+
+	double tsc_ghz = calibrate_tsc_ghz();
+	FILE* gf = fopen("tsc_ghz.txt", "w");
+	fprintf(gf, "%.6f\n", tsc_ghz);
+	fclose(gf);
+	fprintf(stderr, "tsc: %.4f GHz\n", tsc_ghz);
 
 	std::mt19937_64 rng(12345);
 

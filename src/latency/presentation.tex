@@ -194,7 +194,7 @@
 		\item A \textbf{limit order} represents an intention to trade some \textbf{quantity} in some \textbf{direction} at some \textbf{limit price} or better
 		\item We can send three kinds of messages to the matching engine:
 		\begin{itemize}
-			\item \textbf{Insert} an order with some \textbf{lifetime}
+			\item \textbf{Insert} an order with some \textbf{lifetime} (e.g. GTC, GFD, FAK, FOK)
 			\item \textbf{Cancel} or \textbf{modify} existing order(s)
 		\end{itemize}
 		\item The matching engine maintains an \href{https://www.binance.com/en-AU/trade/BTC_USDT}{\textbf{order book}} and produces \textbf{matches} when two orders are willing to trade with each other
@@ -222,7 +222,7 @@
 
 \begin{frame}{Toy model}
 	Expected quadratic utility of trading $q$ units with a forecast horizon $h$, forecast $\mu$, volatility $\sigma$, and risk aversion $\lambda$ is roughly given by
-	$$q \mu-\lambda q^2 \sigma^2(h+t)^2,$$
+	$$q \mu-\lambda q^2 \sigma^2(h+t),$$
 	where $t$ is the time taken to get out of the position at a fair price.
 \end{frame}
 
@@ -236,14 +236,21 @@
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Electronic Trading}
-	%do some EDA on book dynamics.
-	%market moved vs theo moved, hitting on insert vs hitting on other book event
-%fill rate
-%Adverse selection (probably recurring theme)
-%More intelligence can make you effectively faster
+\begin{frame}{Reaction Times}
+	\centering
+	\includegraphics[scale=0.45]{assets/latency_cdf.png}
 %Fast cancels & sweep protection
-%Empirical example with "big trade" copying alpha. Calibrate thresholds, then test various latency models.
+\end{frame}
+
+\begin{frame}{Fill Rate}
+	\centering
+	\includegraphics[scale=0.35]{assets/fill_rate.png}
+\end{frame}
+
+\begin{frame}{Adverse Selection}
+	\centering
+	\includegraphics[scale=0.35]{assets/return_per_fill.png}
+	%More intelligence can make you effectively faster
 \end{frame}
 
 \begin{frame}[fragile]{Latency}
@@ -271,7 +278,7 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 %Question to ponder: why so much variation?
 \end{frame}
 
-\sectionquote{``Time exists in order that everything doesn’t happen all at once.'' Ray Cummings \\ \includegraphics[scale=0.4]{assets/rabbit.png} \\ ``By a clock we understand anything characterized by a phenomenon passing periodically through identical phases so that \ldots all that happens in a given period is identical with all that happens in an arbitrary period.'' Albert Einstein}%16MHz
+\sectionquote{``Time \ldots is what keeps everything from happening at once.'' Ray Cummings \\ \includegraphics[scale=0.4]{assets/rabbit.png} \\ ``By a clock we understand anything characterized by a phenomenon passing periodically through identical phases so that \ldots all that happens in a given period is identical with all that happens in an arbitrary period.'' Albert Einstein}%16MHz
 \section{Time}
 
 \begin{frame}{Clocks}
@@ -280,15 +287,19 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 			\begin{center} \includegraphics[scale=0.04]{assets/clockwork.jpg} \includegraphics[scale=0.2]{assets/crystal.jpg} \end{center}
 		\item A \textbf{voltage-controlled oscillator} has a frequency dependent on the input voltage.
 		\item A \textbf{phase detector} can produce a signal whose strength depends on how fast or slow the VCO is running compared to the reference.
-		\item If the VCO runs at a multiple of the reference frequency and is kept in a \textbf{phase-locked loop} with the reference, we can achieve oscillation at some multiple of the reference frequency. This can be chained a number of times.
+		\item By keeping the VCO in a \textbf{phase-locked loop} with the reference, we can achieve oscillation at some multiple of the reference frequency. This can be chained a number of times.
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Clock Drift}
 	Heat, manufacturing differences, crystal aging, voltage fluctuations, etc., can cause two clocks $T_1(t)$ and $T_2(t)$ to experience \textbf{clock drift}, whereby $\theta_{1\to 2} = T_2(t)-T_1(t)$ changes over time.
 
+	\begin{center}
+		\includegraphics[scale=0.4]{assets/clock_drift.png}
+	\end{center}
+
 	It is possible to observe negative apparent latency when naively comparing timestamps from poorly synced clocks.
-	%graph for ES, control for things
+
 	%Note that this is not trivial to distinguish from slow changes in service quality over time. But generally those are a bit more discrete
 \end{frame}
 
@@ -312,10 +323,12 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 		\end{tikzpicture}
 	\end{center}
 
-	Each piece of hardware can be equipped with its own clock $T_{*}(t)$.
+	\begin{block}{Clock Drift Estimation}
+		Each piece of hardware can be equipped with its own clock $T_{*}(t)$.
 
-	By sending messages across the network, recording timestamps at each of the clocks, and adjusting for latency, we can estimate the clock drift.
+		We can \textbf{send messages} over the network, \textbf{record timestamps} at each device clock, and \textbf{adjust for latency}.
 
+	\end{block}
 	This allows us to adjust the client clock speed (\textbf{slewing}) such that $\theta_{c\to m}$ approaches zero.
 \end{frame}
 
@@ -325,8 +338,8 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 	Suppose we have symmetric latency $T_m(t_2)-T_m(t_1) = T_m(t_4)-T_m(t_3)$.
 	It follows that $T_m(t_2)-(T_c(t_1)+\theta_{c\to m}) = (T_c(t_4)+\theta_{c\to m})-T_m(t_3)$. Then
 	\begin{align*}
-		\theta_{c\to m} &= \frac{1}{2}\left(\underbrace{(T_c(t_4)-T_m(t_3))}_\text{Receive} - \underbrace{(T_m(t_2)-T_c(t_1))}_\text{Transmit}\right) \\
-		&= \frac{1}{2}\left(\underbrace{(T_c(t_4)-T_c(t_1))}_\text{Round-trip time} - \underbrace{(T_m(t_3)-T_m(t_2)}_\text{Wire-to-wire}\right) \\
+		\theta_{c\to m} &= \frac{1}{2}\left(\underbrace{(T_m(t_2)-T_c(t_1))}_\text{Transmit} - \underbrace{(T_c(t_4)-T_m(t_3))}_\text{Receive}\right) \\
+		&= \underbrace{\frac{1}{2}(T_m(t_3)+T_m(t_2))}_{\text{Midpoint for }m} - \underbrace{\frac{1}{2}(T_c(t_4)+T_c(t_1))}_{\text{Midpoint for }c} \\
 	\end{align*}
 
 	In the case where wire-to-wire latency is zero, this is also known as Einstein synchronisation.
@@ -338,11 +351,11 @@ round-trip min/avg/max/stddev = 3.763/13.023/43.958/15.533 ms
 	Suppose we have $T_c(t_1), T_s(t_2), T_s(t_3), T_m(t_4), T_m(t_5), T_s(t_6), T_s(t_7), T_c(t_8)$.
 
 	Then we have
-	$$\theta_{c\to s} = \frac{1}{2}\left((T_c(t_8)-T_s(t_7)) - (T_s(t_2)-T_c(t_1))\right),$$
-	$$\theta_{s\to m} = \frac{1}{2}\left((T_s(t_6)-T_m(t_5)) - (T_m(t_4)-T_s(t_3))\right),$$
+	$$\theta_{c\to s} = \frac{1}{2}\left((T_s(t_2)-T_c(t_1)) - (T_c(t_8)-T_s(t_7))\right),$$
+	$$\theta_{s\to m} = \frac{1}{2}\left((T_m(t_4)-T_s(t_3)) - (T_s(t_6)-T_m(t_5))\right),$$
 	$$\theta_{c\to m} = \theta_{c\to s} + \theta_{s\to m}.$$
 
-	We can either record a cumulative adjustment in the timing packets (transparent switch), or sync the switch to the master clock and then the client to the switch (boundary clock).
+	We can either record a cumulative adjustment in the timing packets (transparent clock), or sync the switch to the master clock and then the client to the switch (boundary clock).
 \end{frame}
 
 \sectionquote{``Speed is the essence of war.'' Sun Tzu \\ ``Remote fountains are of little help to nearby fires.'' Han Fei}
@@ -431,9 +444,8 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	\pause
 	\begin{block}{Jan 19 (Reuters)}
 		\small
-		China's securities regulator has asked brokers to \textbf{remove client-dedicated servers from data centers in local exchanges}, a move that will deprive rapid-trading "flash boys" of an edge against other investors \ldots High-frequency traders in China have long used servers situated at data centers run by futures and stock exchanges and owned by brokers to execute trades as \textbf{the physical adjacency shaves off milliseconds or even microseconds}.
+		``China's securities regulator has asked brokers to \textbf{remove client-dedicated servers from data centers in local exchanges}, a move that will deprive rapid-trading "flash boys" of an edge against other investors \ldots High-frequency traders in China have long used servers situated at data centers run by futures and stock exchanges and owned by brokers to execute trades as \textbf{the physical adjacency shaves off milliseconds or even microseconds}.''
 	\end{block}
-	% https://www.reuters.com/world/china/china-curbs-flash-boys-access-exchange-data-sources-say-2026-01-19/
 \end{frame}
 
 \sectionquote{\includegraphics[scale=0.15]{assets/cat5.jpg} \\ ``This new form of communication could have some utility.'' Guglielmo Marconi \\ \vspace{0.5cm} \includegraphics[scale=0.04]{assets/onion.jpg}}
@@ -447,7 +459,7 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	\begin{itemize}
 		\item 1969: NPL network becomes operational, governed by a central `routing' computer rather than an L1 crosspoint
 		\item 1977: Patent granted for Ethernet, introducing CSMA/CD
-		\item 1986: HP announces StarLAN, one of the first Ethernet hubs.
+		\item 1986: AT\&T develops StarLAN, one of the first topologies to use Ethernet hubs.
 		\item 1986: DEC introduces the LANBridge 100 with a software-level MAC table and selective casting.
 		\item 1989: Kalpana introduces EtherSwitch with a hardware-level MAC table, allowing half-duplex cut-through switching
 		\item 1995: Cisco releases the Catalyst 5000 switch, supporting multicast switching
@@ -489,21 +501,23 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	\includegraphics[scale=0.4]{assets/tcp.png}
 \end{frame}
 
-\begin{frame}{Exchange Protocols}
-	%Execution
-	%Market Data
-	%ITCH, OUCH,OMNET,FIX
-	% message structure, https://www.nasdaq.com/Options_Order_Feed
-	% order types
+\begin{frame}{Common Exchange Protocols}
+	\begin{itemize}
+		\item \href{https://www.nasdaqtrader.com/content/technicalsupport/specifications/TradingProducts/OUCH5.0.pdf}{OUCH} (Execution)
+		\item \href{https://www.nasdaqtrader.com/content/technicalsupport/specifications/dataproducts/NQTVITCHSpecification.pdf}{ITCH} (Market Data)%market by order
+		\item \href{https://fixtrading.org/packages/fix-tagvalue-encoding/}{FIX} (Both)
+	\end{itemize}
 \end{frame}
 
 \begin{frame}{Network Timestamping}
 	%Hardware vs software timestamping
-	Timestamping of messages may be done at multiple points in the system (e.g. \texttt{timestamp\_match} and \texttt{timestamp\_publication}).
+	\begin{itemize}
+		\item Timestamping of messages may be done at multiple points in the system (e.g. \texttt{timestamp\_match} and \texttt{timestamp\_publication}).
 
-	Timestamps from different clocks (e.g. from different machines) are not trivial to compare owing to clock drift and clock sync inaccuracies (e.g. caused by network asymmetry).
+		\item Timestamps from different clocks (e.g. from different machines) are not trivial to compare owing to \textbf{clock drift} and \textbf{clock sync inaccuracies} (e.g. caused by network asymmetry).
 
-	Usually the timestamp is calculated according to the first bit of the Ethernet header (start-of-frame). The last bit timestamp can be inferred using the bandwidth of the transmission.
+		\item Usually the timestamp is calculated according to the first bit of the Ethernet header (start-of-frame). The last bit timestamp can be inferred using the bandwidth of the transmission.
+	\end{itemize}
 \end{frame}
 
 \begin{frame}{Abstract Colocation Topology}
@@ -514,8 +528,6 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	\centering
 	\includegraphics[scale=0.4]{assets/tse.png}
 	%exchange documentation is a starting point but cannot always be fully trusted
-
-	%https://www.reddit.com/r/chipdesign/comments/1arh2vr/what_is_a_phy/
 
 	%https://en.wikipedia.org/wiki/Gateway_(telecommunications) - Gateways are servers. https://www.nasdaqtrader.com/Trader.aspx
 \end{frame}
@@ -544,7 +556,7 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 	\pause
 
 	\begin{itemize}
-		\item \textbf{Load balancers} help accomodate the large volume of data moving through the network, particularly during significant market events.
+		\item \textbf{Load balancers} help accommodate the large volume of data moving through the network, particularly during significant market events.
 	\end{itemize}
 
 	%https://news.ycombinator.com/item?id=30117637
@@ -677,7 +689,7 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 \end{frame}
 
 \sectiondiagram{matching}
-\sectionquote{``The most amazing achievement of the computer software industry is its continuing cancellation of the steady and staggering gains made by the computer hardware industry.'' Henry Peteroski}
+\sectionquote{``The most amazing achievement of the computer software industry is its continuing cancellation of the steady and staggering gains made by the computer hardware industry.'' Henry Petroski}
 \section{Matching Engine}
 
 \begin{frame}{Matching Engine Responsibilities}
@@ -720,15 +732,16 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 \end{frame}
 
 \begin{frame}{Order Book Representation}
-%CLOB. Priority. How to efficiently maintain.
-%efficient matching engine https://arxiv.org/html/2606.01183v1
+	\begin{itemize}
+		\item Operations: insertion, cancellation/amends, matching
+		\item Price levels (sparse vs. dense)
+		\item Time priority
+	\end{itemize}
 \end{frame}
 %self-match prevention & cancellation disadvantage
 
 %Dynamic gateway selection
 %Gateway cache eviction -> warming
-
-%Adverse selection: arises when edge reqs are different for instance
 
 %EC2 instance that handles a matching engine, a BTC WAN link, and external order entry (dumber, slower participants)
 %Two EC2 instances (taker-only, market-maker) that compete for taking. MM risk limits naturally cause tradeable prices to move in the direction of dumb flow (eg based on stale base prices) regardless of fair value.
@@ -760,7 +773,6 @@ round-trip min/avg/max/stddev = 336.076/359.303/403.366/31.172 ms
 
 	Often we will get the same information in more than one way. 
 %## Feed Arbitration
-% https://ieeexplore.ieee.org/document/6718377
 \end{frame}
 
 \begin{frame}[fragile]{Trade Message Example (\href{https://api2.sgx.com/sites/default/files/2026-06/OMnet_MessRef_SGX_va42.pdf}{SGX OMnet})}
@@ -786,8 +798,8 @@ struct BD70 { // Trade Ticker VIB (Variable Information Broadcast)
 		}
 		struct timestamp_match { UINT32_T tv_sec; INT32_T tv_nsec }
 		struct time_of_publication { UINT32_T tv_sec; INT32_T tv_nsec; }
-		UINT64_T execution_event_nbr_u // Execution number %sequence number
-		UINT32_T match_group_nbr_u // Match group number, group inside an execution %notably we dont know how many broadcasts are to come
+		UINT64_T execution_event_nbr_u // Execution number
+		UINT32_T match_group_nbr_u // Match group number, group inside an execution
 		INT64_T deal_quantity_i // Quantity, Deal
 		INT32_T deal_price_i // Price, Deal
 		UINT16_T segment_number_n // Segment Number
@@ -796,6 +808,8 @@ struct BD70 { // Trade Ticker VIB (Variable Information Broadcast)
 	}
 }
 \end{lstlisting}
+	%execution number = sequence number
+	%match group number: notably we dont know how many broadcasts are to come
 \end{frame}
 
 \begin{frame}[fragile]{Private Fill Message Example}
@@ -816,7 +830,6 @@ struct BO5 { // Firm Order Book VIB
 			char[15] customer_info_s; UINT8_T open_close_req_c;
 			UINT8_T bid_or_ask_c; UINT8_T ext_t_state_c;
 			UINT8_T order_type_c; UINT8_T stop_condition_c; char[2] filler_2_s;
-%Metadata, look for patterns. https://security.stackexchange.com/questions/216369/is-exposing-enumerated-ids-a-bad-idea-if-precautions-are-taken check databento sample PCAPs to see if obvious
 		}
 		struct party {char[2] country_id_s; char[5] ex_customer_s; CHAR filler_1_s}
 		CHAR[32] exchange_info_s // Exchange, Information
@@ -832,11 +845,10 @@ struct BO5 { // Firm Order Book VIB
 }
 \end{lstlisting}
 \end{frame}
+%Metadata, look for patterns. https://security.stackexchange.com/questions/216369/is-exposing-enumerated-ids-a-bad-idea-if-precautions-are-taken check databento sample PCAPs to see if obvious
+
 %If private feed is processed on a separate thread to market data, it can cause interpacket gap to depend on N
 %Demo: Burstiness -> added latency, private feed (acks, traded, canaries)
-
-%Market data: incremental, snapshot, etc. 
-% https://medium.databento.com/analyzing-private-fills-and-canary-orders-with-databentos-high-precision-market-data-timestamps-8cb12f82a1a3
 
 \begin{frame}{Publication Latency}
 	\begin{itemize}{}
@@ -956,7 +968,7 @@ struct BO5 { // Firm Order Book VIB
 	However, because of the large volume of market data and limited space in the trigger cache, \textbf{tick-to-config} latency/throughput are still important considerations. %Especially when you consider that market activity is autocorrelated
 \end{frame}
 
-%The cases when wire-to-wire matters (low jitter) are cases where marginal gains (but not necessarily step changes) are going to be not that useful. Can draw curves of opportunity vs latency.
+%The cases when wire-to-wire matters (low jitter) are cases where marginal gains (but not necessarily step changes) are going to be not that useful
 
 \sectiondiagram{hardware}
 \sectionquote{``All great events hang by a hair.'' Napoleon}
@@ -970,7 +982,7 @@ struct BO5 { // Firm Order Book VIB
 	While primarily useful onboard a NIC, FPGAs also have applications in other low-latency/high-throughput situations.
 \end{frame}
 
-\begin{frame}{Controllable Logic Blocks (CLBs)}
+\begin{frame}{Configurable Logic Blocks (CLBs)}
 	\begin{center}
 		\includegraphics[scale=0.35]{assets/clb.png}
 	\end{center}
@@ -1014,7 +1026,7 @@ module itch_volume #(
 \begin{frame}{Parallelism}
 	\begin{itemize}
 		\item A single clock cycle permits simultaneous dataflow through multiple CLBs at once.
-		\item Module will be equal to the number of clock cycles to produce an output, divided by the clock frequency
+		\item Module latency will be equal to the number of clock cycles to produce an output, divided by the clock frequency
 	\end{itemize}
 
 	One extreme example of parallelism afforded by special-purpose circuitry is a \href{https://docs.google.com/spreadsheets/d/1ndaz7_nyNNiciWW2bAGFsjldRJw72Wh_dNt0qzXUdKs/}{\textbf{systolic array}}.
@@ -1025,7 +1037,7 @@ module itch_volume #(
 \begin{frame}{Memory}
 	A \textbf{D-Flip Flop} emits a binary signal when powered, equal to its data input on the most recent \textbf{clock edge}.
 	\begin{center}
-		\includegraphics[scale=0.1]{assets/dflipflop.png}
+		\includegraphics[scale=0.07]{assets/dflipflop.png}
 	\end{center}
 \end{frame}
 
@@ -1042,29 +1054,35 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 );
 \end{lstlisting} %might have multiple read/write ports
 
-	B-RAM is a kind of \textbf{Static Random Acccess Memory} (S-RAM). Dedicated RAM devices are typically cheaper, slower \textbf{Dynamic Random Access Memory} (D-RAM).
+	B-RAM is a kind of \textbf{Static Random Access Memory} (S-RAM). Dedicated RAM devices are typically cheaper, slower \textbf{Dynamic Random Access Memory} (D-RAM).
 
-	Some RAMs support \textbf{double-data input/output} (DDIO), moving data at both positive and negative clock edges.
-
-	Making a RAM block larger will generally necessitate slower timing. In theory, this is $O(\sqrt{N})$ for a 2-dimensional RAM layout.
+	\begin{block}{RAM Timing}
+		\begin{itemize}
+			\item Some RAMs support \textbf{double data rate input/output} (DDIO), moving data at both positive and negative clock edges.
+			\item Making a RAM block larger will generally necessitate slower timing. In theory, this is $O(\sqrt{N})$ for a 2-dimensional RAM layout.
+		\end{itemize}
+	\end{block}
 \end{frame}
 
 \begin{frame}{Synthesis}
 	Following design and verification, programming the board involves the following stages:
 	\begin{enumerate}
-		\item Parsing of the \textbf{hardware description} (e.g. VHDL, Verilog, Clash, Hardcaml) into an abstract representation at the \textbf{logic-gate level}%minimal area is nice
+		\item Parsing of the \textbf{hardware description} (e.g. VHDL, Verilog, Clash, Hardcaml) into an abstract representation%minimal area is nice
 		\item Identifying the dependency DAG of register values over time (\textbf{register-transfer level})
+		\item Generating a \textbf{gate-level netlist}
 		\item Translation into resources made available by the board, and optimising the placement of logic/routing for timing, power, etc. %also crosstalk
-		\item Generating a \textbf{gate-level netlist} to be serialised and `flashed' onto the board
+		\item Serialisation and `flashing' onto the board
 	\end{enumerate}
 	Optimisation generally makes use of some \textbf{cost model}. Depending on the software used, it may be non-deterministic.%intel quartus uses simulated annealing but vivado is in theory deterministic
-
-	Sophisticated software also exists to translate higher-level descriptions (for instance, code written in a dialect of C) into RTL designs. This is known as \textbf{High-Level Synthesis} (HLS).
 	%question. is it common to run out of resources
 \end{frame}
 
+\begin{frame}{High Level Synthesis (HLS)}
+	Sophisticated software also exists to translate \href{https://github.com/Xilinx/Vitis-HLS-Introductory-Examples/blob/master/Pipelining/Loops/pipelined_loop/loop_pipeline.cpp}{higher-level descriptions} (for instance, code written in a dialect of C) into RTL designs.
+\end{frame}
+
 \begin{frame}{Interconnects and PCIe (Peripheral Component Interconnect Express)}
-	\textbf{PCIe} is the most common way for specialised components (NIC, CPU, RAM, GPU, etc.) in a computer to communicate.%also provides power
+	\textbf{PCIe} is the standard way for specialised components (NIC, GPU, etc.) in a computer to communicate with the CPU.%also provides power
 
 	\begin{center}
 		\includegraphics[scale=0.15]{assets/pcie.jpg}
@@ -1073,7 +1091,7 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 	\begin{itemize}
 		\item OS/BIOS find components at startup and give them a \texttt{Bus:Device.Function} (BDF) address
 		\item A clock signal is distributed from a central source for syncing
-		\item Information is packetised, with the BDF address used for switching
+		\item Information is packetised
 		\item Packets carry \href{https://docs.amd.com/r/en-US/pg194-axi-bridge-pcie-gen3/PCIe-Transaction-Type}{transactions}, which can be reads, writes, interrupts etc.
 	\end{itemize}
 \end{frame}
@@ -1112,9 +1130,10 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 		\end{itemize}
 	\end{enumerate}
 
+	The \textbf{Instruction Set Architecture} (ISA) defines how \href{https://godbolt.org/z/e3q4rox9e}{\textbf{machine instructions}} are interpreted.
+
 	You can check what CPU you have with \texttt{lscpu}.
 
-	The \textbf{Instruction Set Architecture} (ISA) defines how \href{https://godbolt.org/z/e3q4rox9e}{\textbf{machine instructions}} are interpreted.
 \end{frame}
 
 \begin{frame}{Overclocking}
@@ -1148,21 +1167,26 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 
 \begin{frame}{Microarchitecture}
 	\centering
-	\includegraphics[scale=0.7]{assets/intel.png}
+	\includegraphics[scale=0.5]{assets/intel.png}
 \end{frame}
 	
 \begin{frame}{Out-of-Order Execution}
-	In practice, the Fetch-Decode-Execute loop is parallelised in modern CPUs.
+	\begin{block}{Parallelism}
+		In practice, the Fetch-Decode-Execute loop is parallelised in modern CPUs.
 
-	\begin{enumerate}
-		\item \textbf{Issue} the instruction to a relevant \textbf{reservation station}
-		\item Wait for the operands to be ready before \textbf{executing} the operation
-		\item \textbf{Write} the result to the output register and \textbf{broadcast} to other reservation stations
-	\end{enumerate}
+		\begin{enumerate}
+			\item \textbf{Issue} the instruction to a relevant \textbf{reservation station}
+			\item Wait for the operands to be ready before \textbf{executing} the operation
+			\item \textbf{Write} the result to the output register and \textbf{broadcast} to other reservation stations
+		\end{enumerate}
+	\end{block}
 
-	CPUs are not always transparent about their inner workings, but tools like \texttt{llvm-mca --timeline} can give some very rough hints.
-%mca demo in godbolt
-	Taking advantage of parallelism involves \textbf{dependency minimisation}. Modern compilers are quite good at this.
+	\begin{itemize}
+		\item Taking advantage of parallelism involves \textbf{dependency minimisation}. Modern compilers are quite good at this.
+
+		\item CPUs are not always transparent about their inner workings
+		\item Tools like \href{https://godbolt.org/z/8P6jKv81c}{\texttt{llvm-mca --timeline}} can give some very rough hints
+	\end{itemize}
 \end{frame}
 
 	%picture?
@@ -1173,9 +1197,11 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 	%memory order buffer / load-store queue
 
 \begin{frame}{x86}
-	An \textbf{Instruction Set Architecture} defines the available machine instructions and their behaviour.
+	\begin{itemize}
+		\item An \textbf{Instruction Set Architecture} defines the available \textbf{machine instructions} and their behaviour.
 
-	The ISA also exposes a fixed set of \href{https://en.wikibooks.org/wiki/X86_Assembly/X86_Architecture}{\textbf{logical registers}}.
+		\item The ISA also exposes a fixed set of \href{https://en.wikibooks.org/wiki/X86_Assembly/X86_Architecture}{\textbf{logical registers}}.
+	\end{itemize}
 
 	\begin{block}{x86}
 		\begin{itemize}
@@ -1218,7 +1244,7 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 \begin{frame}{Heap Memory}
 	\begin{itemize}
 		\item Sometimes the amount of memory we need is only known at runtime
-		\item We can request \textbf{virtual memory} from the OS using syscalls like \texttt{brk} and {mmap}
+		\item We can request \textbf{virtual memory} from the OS using syscalls like \texttt{brk} and \texttt{mmap}
 		\item Since syscalls are expensive, we can use a software-level allocator like \texttt{malloc} that fetches a large amount of memory in advance
 		\item Allocation is still expensive and should be avoided in the hotpath
 		\item \textbf{Heap fragmentation} and \textbf{pressure} can slow down allocation even further
@@ -1240,7 +1266,9 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 
 \begin{frame}{Cache Misses}
 
-	\includegraphics[scale=0.2]{code/cache/cdf.png}
+	\begin{center}
+		\includegraphics[scale=0.45]{code/cache/cdf.png}
+	\end{center}
 
 	Cache misses can be avoided by controlling:
 	\begin{itemize}
@@ -1252,8 +1280,12 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 	%approximate access latencies in # clock cycles, seconds
 	%instruction cache, inlining pros v cons
 	%alignment. how to ensure
-	%https://www.akkadia.org/drepper/cpumemory.pdf
 	%prefetching, prefetch-friendly programming
+\end{frame}
+
+\begin{frame}{Cache-Friendly Design}
+	\centering
+	\includegraphics[scale=0.5]{code/container/container_latency.png}
 \end{frame}
 
 \begin{frame}{Branch Prediction}
@@ -1273,10 +1305,16 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 	\end{block}
 \end{frame}
 
+\begin{frame}{Branch Predictability}
+	\centering
+	\includegraphics[scale=0.4]{code/branch/branch_latency.png}
+\end{frame}
+
 \begin{frame}{Branch Misses}
 	\begin{itemize}
-		\item We can count branch missses with \texttt{perf stat -e branches,branch-misses}
+		\item We can count branch misses with \texttt{perf stat -e branches,branch-misses}
 		\item Figuring out which branches were mispredicted can be nontrivial and quite CPU-specific
+		\item Sometimes it is cheaper to compute both branches and use \texttt{cmov}
 		\item We can hint to the compiler with keywords like \texttt{[[likely]]}/\texttt{[[unlikely]]}. Instruction-level branch hints are not normally supported.
 	\end{itemize}
 	%"Time forks perpetually toward innumerable futures." Borges
@@ -1292,7 +1330,7 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 		\item \texttt{valgrind --tool=cachegrind}, \href{https://github.com/david-grs/papipp}{\texttt{libpapi}}
 		\item \texttt{hwlatdetect}
 		\item \texttt{rteval}, \texttt{osnoise}
-		\item \texttt{\_\_rdtsc()} + \texttt{\_mm\_mfence()}
+		\item \texttt{\_\_rdtsc()} + \texttt{\_mm\_lfence()}
 	\end{itemize}
 \end{frame}
 
@@ -1302,13 +1340,12 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 		\item Each core may have multiple CPUs, visible with \texttt{lscpu -e=CPU,CORE}
 		\item Each CPU can execute instructions independently, e.g. for multithreaded code
 		\item Threads may be \textbf{pinned} to a core, or have an \textbf{affinity bitmask} (\texttt{taskset}, \texttt{cpuset}, \texttt{tuna})
-		\item \textbf{Interrupt Request} (IRQ) affinity (particularly NIC IRQs)
-		\item NIC IRQ Receive Packet Steering (RPS) can help with load balancing
+		\item \textbf{Interrupt Request} (IRQ) affinity (particularly NIC IRQs) and steering may assist performance
 		\item Configuration parameters like \texttt{isolcpus} and \texttt{nohz\_full} allow a core to avoid running certain tasks
 	\end{itemize}
 
 	\begin{block}{Interprocess Communication (IPC)}
-		Threads often need to communicate information to one another.
+		Different processes often need to communicate information to one another.
 
 		Libraries like \texttt{boost::interprocess} rely on the \texttt{mmap} syscall to allocate \textbf{shared memory}.
 	\end{block}
@@ -1319,7 +1356,7 @@ module ram #(parameter int ADDR_WIDTH = 16, parameter int DATA_WIDTH = 64) (
 		\item Each \textbf{cache line} is \textbf{single-writer} to ensure \textbf{coherence}
 		\item Transferring ownership is costly
 		\item \textbf{False Sharing}: Threads modifying data in the same cache line causes ownership to `bounce' between cores
-		\item Cache writes take some time to commit to memory, so other threads may not see the write immediately
+		\item Cache writes trigger \textbf{cache invalidation} for other cores reading the cache line
 		\item It may be possible to configure the NIC to share a cache with the processors
 	\end{itemize}
 	
@@ -1366,7 +1403,9 @@ lock add DWORD PTR [x], 1
 \end{frame}
 
 \begin{frame}{Kernel Networking}
-	\includegraphics[scale=0.5]{assets/kernel_tx.png}
+	\begin{center}
+		\href{https://godbolt.org/z/6ejP5K4o8}{\includegraphics[scale=0.4]{assets/kernel_tx.png}}
+	\end{center}
 
 	This can be profiled at a high level with tools like \texttt{sockperf}.
 \end{frame}
@@ -1376,15 +1415,15 @@ lock add DWORD PTR [x], 1
 		\item Interrupt-based networking introduces \textbf{task-switching overhead}
 		\item A standard NIC setup will \textbf{not interrupt immediately} upon receipt of a message
 		\item We can \texttt{mmap} the NIC's DMA segment to use \textbf{shared memory} instead
-		\item \textbf{Continuous polling} of the RX queue, combined with \textbf{cache warming}, allows for rapid response
+		\item \textbf{Continuous polling} of the RX queue allows for rapid response%cache warming
 	\end{itemize}
 
 	\begin{block}{Kernel Bypass Frameworks}
-		We will need to know the layout of DMA to communicate with the NIC.
-
-		Frameworks like TCPDirect, DPDK (+F-Stack/mTCP) provide specialised APIs for kernel bypass.
-
-		OpenOnload, VMA (vhost/Mellanox Messaging Accelerator) make use of \texttt{LD\_PRELOAD} to monkeypatch\footnote{Specifically, changing the dynamic linking} the kernel's networking API.
+		\begin{itemize}
+			\item We need to know the layout of DMA to communicate with the NIC
+			\item TCPDirect, DPDK (+F-Stack/mTCP) provide specialised APIs
+			\item OpenOnload and Nvidia Messaging Accelerator make use of \texttt{LD\_PRELOAD} to monkeypatch\footnote{Specifically, changing the dynamic linking} \texttt{libc}'s socket calls
+		\end{itemize}
 	\end{block}
 \end{frame}
 
@@ -1424,7 +1463,7 @@ lock add DWORD PTR [x], 1
 	\begin{block}{Development}
 		Since compilation does work for us, it can take time on big projects. If we're only checking correctness, we can get away with worse machine code:
 		\begin{itemize}
-			\item Optimisation levels, \texttt{-O0} (default) to \texttt{-O7}
+			\item Optimisation levels, \texttt{-O0} (default) to \texttt{-O3}, \texttt{-Os}, \texttt{-Oz}, \texttt{-Og}, \texttt{-Ofast}
 			\item Linking and \texttt{Makefile}s
 %https://llvm.org/docs/LinkTimeOptimization.html
 		\end{itemize}
@@ -1554,6 +1593,20 @@ lock add DWORD PTR [x], 1
 %https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/6/html/performance_tuning_guide/main-network#s-network-future
 %https://www.coverfire.com/articles/queueing-in-the-linux-network-stack/
 %https://brooker.co.za/blog/2024/05/09/nagle.html
+% https://ieeexplore.ieee.org/document/6718377
+	% https://www.reuters.com/world/china/china-curbs-flash-boys-access-exchange-data-sources-say-2026-01-19/
+	%https://www.nasdaq.com/Options_Order_Feed
+%https://arxiv.org/html/2606.01183v1
+% https://medium.databento.com/analyzing-private-fills-and-canary-orders-with-databentos-high-precision-market-data-timestamps-8cb12f82a1a3
+	%https://www.akkadia.org/drepper/cpumemory.pdf
+%https://www.hudsonrivertrading.com/hrtbeat/optimising-compiler-performance-a-case-for-devirtualisation/
+%https://databento.com/blog/introduction-matching-engines
+%https://medium.databento.com/how-we-serve-real-time-tick-data-of-the-entire-us-options-market-over-the-internet-on-a-single-db05f9198378
+%https://tomaherbert.com/hardware-fifos-device-queues-edition-b7b4ec16b0a9
+%https://tomaherbert.com/the-alphabet-soup-of-receive-packet-steering-rss-rps-rfs-and-arfs-c84347156d68
+%https://www.eecis.udel.edu/~mills/database/papers/history.pdf
+%https://www.synopsys.com/glossary/what-is-synthesis.html
+%https://en.algorithmica.org/hpc/profiling/mca/
 
 %Relativity: https://en.wikipedia.org/wiki/One-way_speed_of_light#Einstein_convention
 
