@@ -119,12 +119,18 @@ int main(int argc, char **argv) {
 
 	signal(SIGINT, on_sigint);
 	struct pollfd pfd = { .fd = sock_fd, .events = POLLIN };
+	int idle_polls = 0;
 	while (running) {
 		poll(&pfd, 1, 1000);
 
 		uint32_t rx_idx;
 		size_t n = xsk_ring_cons__peek(&rx, XSK_RING_CONS__DEFAULT_NUM_DESCS, &rx_idx);
-		if (!n) continue;
+		if (!n) {
+			if (++idle_polls % 5 == 0) { printf("idle (%ds)\n", idle_polls); fflush(stdout); }
+			continue;
+		}
+		idle_polls = 0;
+		printf("rx %zu packet(s)\n", n); fflush(stdout);
 
 		uint32_t tx_idx = 0;
 		size_t reserved_tx = xsk_ring_prod__reserve(&tx, n, &tx_idx);

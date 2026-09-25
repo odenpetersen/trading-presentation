@@ -21,7 +21,7 @@ reuse_rank = 100 * reuse.argsort().argsort() / (len(reuse) - 1)
 fig, ax = plt.subplots(figsize=(8, 5))
 sc = ax.scatter(ns, pct, c=reuse_rank, cmap=darkred_orange, vmin=0, vmax=100, s=4, alpha=0.5, linewidths=0)
 
-ax.set_xlim(ns.min(), np.percentile(ns, 99.9))
+ax.set_xlim(0, 200)
 ax.set_xlabel("nanoseconds")
 ax.set_ylabel("cumulative %")
 ax.set_title("access latency CDF, coloured by reuse distance")
