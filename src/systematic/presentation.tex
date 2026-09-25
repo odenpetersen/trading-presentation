@@ -7,6 +7,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx} % for including images
 \usepackage{amsmath, amssymb, mathtools} % for math symbols
+\DeclareMathOperator{\diag}{diag}
 \usepackage{hyperref} % for clickable links
 \usepackage{tikz}
 
@@ -324,8 +325,8 @@
 	is known as the \textbf{asset returns} vector over $T'$. In contrast, $\ell_{T'}$ is not linear in $r_{T'}$. %In fact there's no function of the return that \ell_{T'} is linear in. Benefits and drawbacks, eg expectation/variance
 
 	For a disjoint collection of measurable sets $\omega_1,\ldots\omega_n$ whose union is $\Omega$, we have
-	$$\ell_\Omega & &= \sum_{i=1}^n \ell_{\omega_i},$$
-	$$R_\Omega &= \left(\prod_{i=1}^n (1+R_{\omega_i})\right) - 1 &\approx \sum_{i=1}^n R_{\omega_i} + O\left(\sum_{i=1}^n\sum_{j=1}^n \vert R_{\omega_i} R_{\omega_j} \vert\right).$$
+	$$\ell_\Omega = \sum_{i=1}^n \ell_{\omega_i},$$
+	$$R_\Omega = \left(\prod_{i=1}^n (1+R_{\omega_i})\right) - 1 \approx \sum_{i=1}^n R_{\omega_i} + O\left(\sum_{i=1}^n\sum_{j=1}^n \vert R_{\omega_i} R_{\omega_j} \vert\right).$$
 \end{frame}
 
 \begin{frame}{Summary}
@@ -567,7 +568,7 @@
 
 	\pause
 
-	It is well known that the last traded price $\$p_t$ exhibits \textbf{negative serial autocorrelation} of returns $\frac{dp}{p_t^_}$ (sometimes called \textbf{bid-ask bounce}).
+	It is well known that the last traded price $\$p_t$ exhibits \textbf{negative serial autocorrelation} of returns $\frac{dp}{p_t^-}$ (sometimes called \textbf{bid-ask bounce}).
 
 	Most price proxies exhibit some degree of statistical predictability that cannot be exploited for profit. This is known as \textbf{microstructural noise}.
 
@@ -622,7 +623,7 @@
 
 \begin{frame}{Downsides of Market Making}
 	Assuming $a_{t_-}=a_{t_+}=0$,
-	$$\$\Pi_T	&= \underbrace{\$\int_{t\in T} a_t^- dm^\emptyset}_{\textrm{Midprice P\&L}} - \underbrace{\$\int_{t\in T} \nu_t da}_{\textrm{PPI Penalty}} - \underbrace{\$\int_{t\in T} \lambda_t da}_{\textrm{IPI Penalty}}.$$
+	$$\$\Pi_T = \underbrace{\$\int_{t\in T} a_t^- dm^\emptyset}_{\textrm{Midprice P\&L}} - \underbrace{\$\int_{t\in T} \nu_t da}_{\textrm{PPI Penalty}} - \underbrace{\$\int_{t\in T} \lambda_t da}_{\textrm{IPI Penalty}}.$$
 
 	With a market-making strategy, we lose a lot of control over $a_t^-$.
 
@@ -793,7 +794,7 @@
 		\Sigma	&= \beta \Sigma_f \beta^\top + \Sigma_\epsilon,
 	\\	\mu	&= \alpha,
 	\end{align*}
-	where $\alpha,\beta$ are populated by $\alpha^j,\beta^j$, $\Sigma_\epsilon$ is a diagonal matrix with entries $\sigma^j^2$, and $\Sigma^f$ is the variance of $f_i$.
+	where $\alpha,\beta$ are populated by $\alpha^j,\beta^j$, $\Sigma_\epsilon$ is a diagonal matrix with entries ${\sigma^j}^2$, and $\Sigma^f$ is the variance of $f_i$.
 \end{frame}
 
 \begin{frame}{Spanned and Orthogonal $\alpha$}
@@ -809,11 +810,11 @@
 	$$\frac{\|\alpha^\bot\|_2^2}{\|\Sigma_\epsilon^\frac{1}{2}\alpha^\bot\|_2}.$$
 
 	As $p\to\infty$, this grows as
-	$$\frac{p^2 \overline{(\alpha^\bot^j)^2}}{p \sqrt{\overline{(\sigma^j \alpha^\bot^j)^2}}} = p \frac{\overline{(\alpha^\bot^j)^2}}{\sqrt{\overline{(\sigma^j \alpha^\bot^j)^2}}} $$
+	$$\frac{p^2 \overline{({\alpha^\bot}^j)^2}}{p \sqrt{\overline{(\sigma^j {\alpha^\bot}^j)^2}}} = p \frac{\overline{({\alpha^\bot}^j)^2}}{\sqrt{\overline{(\sigma^j {\alpha^\bot}^j)^2}}} $$
 
-	Since an infinite Sharpe ratio would allow riskless profits (arbitrage), it must be the case that $\frac{\overline{(\alpha^\top^j)^2}}{\sqrt{\overline{(\sigma^j\alpha^\top^j)^2}}}$ decays to zero faster than $p^{-1}$ as we add more assets.
+	Since an infinite Sharpe ratio would allow riskless profits (arbitrage), it must be the case that $\frac{\overline{({\alpha^\top}^j)^2}}{\sqrt{\overline{(\sigma^j{\alpha^\top}^j)^2}}}$ decays to zero faster than $p^{-1}$ as we add more assets.
 
-	Assuming $\sigma^j<\sigma^{\max}$ for all $j$, this means that $\overline{(\alpha^\top^j)^2}\to 0$ faster than $p^{-2}$.
+	Assuming $\sigma^j<\sigma^{\max}$ for all $j$, this means that $\overline{({\alpha^\top}^j)^2}\to 0$ faster than $p^{-2}$.
 
 	Then $r_i \approx \beta ((f_i-\mathbb{E}[f_i]) + \alpha^\beta) + \sigma^j\epsilon_i^j$. We call $(\beta^\top \beta)^{-1}\beta^\top\alpha^\beta$ the \textbf{risk premium} of the factor.
 
@@ -850,8 +851,8 @@
 	\\	F			&\approx \hat{F}		&&= (B^\top \Sigma_\epsilon^{-1} B)^{-1}B^\top \Sigma_\epsilon^{-1}(R-\overline{R}),
 	\\	\varepsilon		&\approx \hat{\varepsilon}	&&= \Sigma_\epsilon^{-1} (R-\overline{R}-BF),
 	\\	\Sigma_\epsilon		&\approx \hat{\Sigma_\epsilon}	&&= \frac{1}{n}\diag((R-\overline{R}-BF)(R-\overline{R}-BF)^\top),
-	\\	B			&\approx \hat{B}_\textrm{FM}	&&= (R-\overline{R})F^\top (FF^\top)^{-1},\textrm{ if }F\textrm{ is known, or}%Fama macbeth estimate
-	\\	B			&\approx \hat{B}_\textrm{PPCA}	&&= \Sigma_\epsilon^\frac{1}{2} U_m,%Needs double checking. How can the two estimates be reconciled?
+	\\	B			&\approx \hat{B}_{\textrm{FM}}	&&= (R-\overline{R})F^\top (FF^\top)^{-1},\textrm{ if }F\textrm{ is known, or}%Fama macbeth estimate
+	\\	B			&\approx \hat{B}_{\textrm{PPCA}}	&&= \Sigma_\epsilon^\frac{1}{2} U_m,%Needs double checking. How can the two estimates be reconciled?
 	\end{align*}
 	where $U_m$ consists of the first $m$ principal components of $\Sigma_\epsilon^{-\frac{1}{2}}(R-\overline{R})$. This is Probabilistic Principal Component Analysis, due to Tipping and Bishop (1999).
 \end{frame}
@@ -1006,7 +1007,7 @@
 
 	We can hold asset $j$ in proportion to some linear combination of $x_i$ given by $x_i\cdot\beta$.
 
-	Let $F=[r_1^A x_1, r_2^A x_2,\ldota r_n^A x_n]^\top$ and $\overline{F} = \frac{1}{n} \sum_{i=1}^n r_i^A x_i$.
+	Let $F=[r_1^A x_1, r_2^A x_2,\ldots, r_n^A x_n]^\top$ and $\overline{F} = \frac{1}{n} \sum_{i=1}^n r_i^A x_i$.
 
 	Assuming no transaction costs, our mean quadratic loss over the entire dataset will be given by
 	$$L \overline{F} \cdot \beta - \frac{1}{2n}\beta^\top F^\top F\beta,$$
@@ -1129,10 +1130,10 @@
 \end{frame}
 
 \section{Appendix: PPCA Stabilisation}
-\begin{frame}{Stabilising $\hat{B}_\textrm{PPCA}$}
+\begin{frame}{Stabilising $\hat{B}_{\textrm{PPCA}}$}
 	In practice, our estimate for $B$ may change over time. If we have PPCA estimates at two different times, $\hat{B}_{\textrm{PPCA}}^t,\hat{B}_{\textrm{PPCA}}^{t+1}$, we may wish to rotate the latter to be close to the former.
 
-	To achieve this, we can use the estimate $\hat{B}_{\textrm{PPCA}}^{t+1}VU^\top$, where $UDV^\top$ is the SVD of $B_{\textrm{PPCA}}^t^\top B_{\textrm{PPCA}}^{t+1}$.%Problem described in Paleologo equation 7.43
+	To achieve this, we can use the estimate $\hat{B}_{\textrm{PPCA}}^{t+1}VU^\top$, where $UDV^\top$ is the SVD of ${B_{\textrm{PPCA}}^t}^\top B_{\textrm{PPCA}}^{t+1}$.%Problem described in Paleologo equation 7.43
 \end{frame}
 
 \section{Appendix: Statistical Arbitrage}
@@ -1232,7 +1233,7 @@
 	\begin{itemize}
 		\item Dividends
 		\item Stock split, reverse stock split
-		\item M&A, spinoff
+		\item M\&A, spinoff
 		\item Rights issues, tender offer, warrant issue
 		\item Exchange offer
 		\item Public offering, share buyback

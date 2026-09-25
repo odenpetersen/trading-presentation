@@ -5,11 +5,15 @@ For any corrections, feel free to message me (e.g. firstname dot lastname at gma
 # September 2026: Latency
 [Slides](https://github.com/odenpetersen/trading-presentation/blob/main/src/latency/presentation.pdf)
 
+[Notes](https://github.com/odenpetersen/trading-presentation/blob/main/src/latency/notes.pdf)
+
 [Code](https://github.com/odenpetersen/trading-presentation/blob/main/src/latency/code/)
 
 # October 2025: Systematic Trading from First Principles
 
 [Slides](https://github.com/odenpetersen/trading-presentation/blob/main/src/systematic/presentation.pdf)
+
+[Notes](https://github.com/odenpetersen/trading-presentation/blob/main/src/systematic/notes.pdf)
 
 [Recording:](https://www.youtube.com/watch?v=hYmR5qk4z8w)
 <p align="center">
